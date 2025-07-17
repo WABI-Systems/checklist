@@ -1,2365 +1,804 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#84c441">
-    <meta name="msapplication-TileColor" content="#84c441">
-    <title>Defect Tracking & QC App</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        /* Universal responsive base */
-        html {
-            font-size: 16px;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-        .save-indicator.show {
-            opacity: 1;
-        }
-
-        /* Mobile-first improvements */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: rgba(132, 196, 65, 0.2);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #494949 0%, #3a3a3a 100%);
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            padding: clamp(10px, 3vw, 20px);
-            -webkit-text-size-adjust: 100%;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: clamp(10px, 2vw, 20px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            min-height: calc(100vh - clamp(20px, 6vw, 40px));
-        }
-
-        .header {
-            background: linear-gradient(135deg, #84C441 0%, #9fd356 100%);
-            color: white;
-            padding: clamp(20px, 5vw, 30px);
-            text-align: center;
-            position: relative;
-        }
-
-        .header-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-nav.left {
-            left: 20px;
-        }
-
-        .header-nav.right {
-            right: 20px;
-        }
-
-        .header-nav .nav-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            backdrop-filter: blur(10px);
-        }
-
-        .header-nav .nav-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-1px);
-        }
-
-        .header-nav .nav-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .header h1 {
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-        }
-
-        .content {
-            padding: clamp(15px, 4vw, 30px);
-        }
-
-        .project-info {
-            background: #f8f9ff;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            border-left: 4px solid #84c441;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #84c441;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #84c441 0%, #9fd356 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-        }
-
-        .btn-success {
-            background: #28a745;
-        }
-
-        .defect-item {
-            background: white;
-            border: 2px solid #e1e5e9;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-
-        .defect-item:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-
-        .defect-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .defect-number {
-            background: #84c441;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-unassigned {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-assigned {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-in-progress {
-            background: #cce5ff;
-            color: #004085;
-        }
-
-        .status-fixed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-verified {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .priority-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-left: 10px;
-        }
-
-        .priority-high {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .priority-medium {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .priority-low {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .export-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .export-buttons .btn {
-            padding: 10px 20px;
-            font-size: 14px;
-        }
-
-        .case-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: clamp(15px, 3vw, 20px);
-            padding: clamp(15px, 3vw, 20px);
-            background: white;
-            border-radius: clamp(10px, 2vw, 15px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            flex-wrap: wrap;
-            gap: clamp(10px, 2vw, 15px);
-        }
-
-        .case-info {
-            text-align: center;
-            flex-grow: 1;
-            min-width: 200px;
-        }
-
-        .case-number {
-            font-size: clamp(1.2rem, 3vw, 1.5rem);
-            font-weight: 700;
-            color: #494949;
-            margin-bottom: 5px;
-        }
-
-        .case-controls {
-            display: flex;
-            gap: clamp(8px, 2vw, 10px);
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .nav-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .nav-btn:hover {
-            background: #5a6268;
-            transform: translateY(-1px);
-        }
-
-        .nav-btn:disabled {
-            background: #dee2e6;
-            color: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .search-section {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .search-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: end;
-        }
-
-        .search-controls .form-group {
-            flex: 1;
-            min-width: 200px;
-            margin-bottom: 0;
-        }
-
-        .search-results {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .search-result-item {
-            padding: 10px;
-            margin: 5px 0;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 4px solid #84c441;
-        }
-
-        .search-result-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-
-        .save-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #84c441;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
-        }
-
-        .landing-page {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #494949 0%, #3a3a3a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-
-        .landing-page.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .landing-content {
-            text-align: center;
-            color: white;
-            max-width: 600px;
-            padding: 40px;
-        }
-
-        .landing-logo {
-            font-size: clamp(3rem, 8vw, 5rem);
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
-        }
-
-        .landing-title {
-            font-size: clamp(2rem, 6vw, 3.5rem);
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .landing-subtitle {
-            font-size: clamp(1.1rem, 3vw, 1.5rem);
-            margin-bottom: 30px;
-            opacity: 0.9;
-            font-weight: 300;
-        }
-
-        .landing-description {
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
-            margin-bottom: 40px;
-            line-height: 1.6;
-            opacity: 0.8;
-        }
-
-        .landing-button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .landing-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .landing-features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 40px;
-            opacity: 0.9;
-        }
-
-        .landing-feature {
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-        }
-
-        .landing-feature-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .landing-feature-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .landing-feature-desc {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-10px);
-            }
-            60% {
-                transform: translateY(-5px);
-            }
-        }
-
-        .main-app {
-            transition: opacity 0.5s ease;
-        }
-
-        .main-app.hidden {
-            opacity: 0;
-        }
-
-        .finish-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        .finish-modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .finish-modal h3 {
-            color: #84c441;
-            margin-bottom: 20px;
-        }
-
-        .finish-modal p {
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .finish-modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .photo-container {
-            margin: 15px 0;
-        }
-
-        .photo-preview {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 10px;
-            margin-top: 10px;
-            border: 2px solid #e1e5e9;
-        }
-
-        .defect-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .defect-actions .btn {
-            padding: 8px 15px;
-            font-size: 14px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-        }
-
-        .file-input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .stat-card {
-            flex: 1;
-            min-width: 150px;
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #84c441;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #ccc;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                margin: 0;
-                border-radius: 0;
-                min-height: 100vh;
-            }
-            
-            .header {
-                padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 1.8rem;
-            }
-            
-            .header p {
-                font-size: 1rem;
-            }
-            
-            .content {
-                padding: 15px;
-            }
-            
-            .case-navigation {
-                flex-direction: column;
-                gap: 15px;
-                padding: 15px;
-            }
-            
-            .case-controls {
-                order: 1;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            
-            .case-info {
-                order: 0;
-                text-align: center;
-            }
-            
-            .case-controls .btn,
-            .case-controls .nav-btn {
-                padding: 12px 16px;
-                font-size: 14px;
-                margin: 5px;
-                min-width: 120px;
-            }
-            
-            .search-section {
-                padding: 15px;
-            }
-            
-            .search-controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .search-controls .form-group {
-                min-width: auto;
-                width: 100%;
-            }
-            
-            .search-controls .btn {
-                width: 100%;
-                padding: 15px;
-                font-size: 16px;
-            }
-            
-            .form-row {
-                flex-direction: column;
-            }
-            
-            .form-row .form-group {
-                min-width: auto;
-                width: 100%;
-            }
-            
-            input, textarea, select {
-                font-size: 16px;
-                padding: 15px;
-                border-radius: 12px;
-            }
-            
-            .btn {
-                padding: 15px 25px;
-                font-size: 16px;
-                min-height: 48px;
-                border-radius: 12px;
-            }
-            
-            .export-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .export-buttons .btn {
-                width: 100%;
-                padding: 15px;
-            }
-            
-            .defect-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .defect-actions {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .defect-actions .btn {
-                width: 100%;
-                text-align: center;
-            }
-            
-            .stats {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .stat-card {
-                min-width: auto;
-                width: 100%;
-                padding: 20px;
-            }
-            
-            .stat-number {
-                font-size: 2.5rem;
-            }
-            
-            .photo-preview {
-                max-width: 100%;
-                max-height: 250px;
-            }
-            
-            .finish-modal-content {
-                width: 95%;
-                padding: 20px;
-                margin: 20px;
-            }
-            
-            .finish-modal-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .finish-modal-buttons .btn {
-                width: 100%;
-            }
-            
-            .save-indicator {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                text-align: center;
-                border-radius: 15px;
-                padding: 12px 20px;
-                font-size: 16px;
-            }
-            
-            .project-info,
-            .search-section,
-            .defect-item {
-                margin-bottom: 20px;
-                border-radius: 15px;
-            }
-            
-            .case-number {
-                font-size: 1.3rem;
-            }
-            
-            /* Improve touch targets */
-            .nav-btn:disabled {
-                background: #dee2e6;
-                color: #6c757d;
-            }
-            
-            /* Better spacing for mobile */
-            h2 {
-                font-size: 1.3rem;
-                margin-bottom: 15px;
-            }
-            
-            h3 {
-                font-size: 1.1rem;
-                margin-bottom: 10px;
-            }
-            
-            /* Mobile-friendly file input */
-            .file-input-wrapper .btn {
-                width: 100%;
-                padding: 20px;
-                font-size: 16px;
-                background: linear-gradient(135deg, #84c441 0%, #9fd356 100%);
-                border: 2px dashed rgba(132, 196, 65, 0.3);
-                color: white;
-            }
-            
-            /* Improve form labels */
-            label {
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 8px;
-                color: #333;
-            }
-            
-            /* Better search results for mobile */
-            .search-result-item {
-                padding: 15px;
-                margin: 8px 0;
-                border-radius: 12px;
-                font-size: 14px;
-            }
-            
-            /* Responsive priority and status badges */
-            .priority-badge,
-            .status-badge {
-                font-size: 11px;
-                padding: 6px 12px;
-                margin: 2px 0;
-            }
-            
-            .defect-number {
-                font-size: 14px;
-                padding: 6px 12px;
-            }
-            
-            /* Mobile-optimized empty state */
-            .empty-state {
-                padding: 60px 20px;
-            }
-            
-            .empty-state h3 {
-                font-size: 1.2rem;
-                margin-bottom: 10px;
-            }
-        }
-
-        /* Extra small screens */
-        @media (max-width: 480px) {
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .content {
-                padding: 10px;
-            }
-            
-            .case-navigation,
-            .search-section,
-            .project-info {
-                padding: 12px;
-            }
-            
-            .defect-item {
-                padding: 15px;
-            }
-            
-            .btn {
-                padding: 12px 20px;
-                font-size: 15px;
-            }
-            
-            .finish-modal-content {
-                width: 98%;
-                padding: 15px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Landing Page -->
-    <div id="landingPage" class="landing-page">
-        <div class="landing-content">
-            <p class="landing-subtitle">WABi & ESA Quality Control & Defect Management</p>
-            
-            <button class="landing-button" onclick="enterApp()">
-                Start Inspection
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Plus, ArrowLeft, ArrowRight, Search, Download, FileText, Grid3X3, Home, Trash2, Check, AlertCircle, Clock, User } from 'lucide-react';
+
+const DefectTrackerApp = () => {
+  const [showLanding, setShowLanding] = useState(true);
+  const [cases, setCases] = useState([]);
+  const [currentCaseIndex, setCurrentCaseIndex] = useState(0);
+  const [defects, setDefects] = useState([]);
+  const [defectCounter, setDefectCounter] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [saveIndicator, setSaveIndicator] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  
+  const fileInputRef = useRef(null);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    clientName: '',
+    projectName: '',
+    projectNumber: '',
+    inspectionDate: new Date().toISOString().split('T')[0],
+    inspectionConductedBy: '',
+    defectDescription: '',
+    defectPriority: 'medium',
+    defectStatus: 'unassigned',
+    assignedTo: '',
+    actionItems: '',
+    defectComments: ''
+  });
+
+  // Initialize app
+  useEffect(() => {
+    if (!showLanding && cases.length === 0) {
+      initializeApp();
+    }
+  }, [showLanding]);
+
+  const initializeApp = () => {
+    const initialCase = {
+      id: 1000,
+      clientName: '',
+      projectName: '',
+      projectNumber: '',
+      inspectionDate: new Date().toISOString().split('T')[0],
+      inspectionConductedBy: '',
+      defects: [],
+      defectCounter: 1
+    };
+    setCases([initialCase]);
+    setCurrentCaseIndex(0);
+    loadCase(0, [initialCase]);
+  };
+
+  const loadCase = (index, casesArray = cases) => {
+    const currentCase = casesArray[index];
+    setFormData({
+      ...formData,
+      clientName: currentCase.clientName,
+      projectName: currentCase.projectName,
+      projectNumber: currentCase.projectNumber,
+      inspectionDate: currentCase.inspectionDate,
+      inspectionConductedBy: currentCase.inspectionConductedBy
+    });
+    setDefects([...currentCase.defects]);
+    setDefectCounter(currentCase.defectCounter);
+  };
+
+  const saveCurrentCase = () => {
+    if (cases.length === 0) return;
+    
+    const updatedCases = [...cases];
+    const currentCase = updatedCases[currentCaseIndex];
+    currentCase.clientName = formData.clientName;
+    currentCase.projectName = formData.projectName;
+    currentCase.projectNumber = formData.projectNumber;
+    currentCase.inspectionDate = formData.inspectionDate;
+    currentCase.inspectionConductedBy = formData.inspectionConductedBy;
+    currentCase.defects = [...defects];
+    currentCase.defectCounter = defectCounter;
+    
+    setCases(updatedCases);
+    showSaveIndicator();
+  };
+
+  const showSaveIndicator = () => {
+    setSaveIndicator(true);
+    setTimeout(() => setSaveIndicator(false), 2000);
+  };
+
+  const createNewCase = () => {
+    saveCurrentCase();
+    const newCaseId = Math.max(...cases.map(c => c.id)) + 1;
+    const newCase = {
+      id: newCaseId,
+      clientName: '',
+      projectName: '',
+      projectNumber: '',
+      inspectionDate: new Date().toISOString().split('T')[0],
+      inspectionConductedBy: '',
+      defects: [],
+      defectCounter: 1
+    };
+    const updatedCases = [...cases, newCase];
+    setCases(updatedCases);
+    setCurrentCaseIndex(updatedCases.length - 1);
+    loadCase(updatedCases.length - 1, updatedCases);
+    showSaveIndicator();
+  };
+
+  const navigateCase = (direction) => {
+    saveCurrentCase();
+    const newIndex = currentCaseIndex + direction;
+    if (newIndex >= 0 && newIndex < cases.length) {
+      setCurrentCaseIndex(newIndex);
+      loadCase(newIndex);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+  };
+
+  const handlePhotoCapture = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedPhoto(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setSelectedPhoto(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const addDefect = () => {
+    if (!formData.defectDescription.trim()) {
+      alert('Please enter a description for the defect.');
+      return;
+    }
+
+    const newDefect = {
+      id: defectCounter,
+      description: formData.defectDescription,
+      priority: formData.defectPriority,
+      assignedTo: formData.assignedTo,
+      actionItems: formData.actionItems,
+      comments: formData.defectComments,
+      status: formData.defectStatus,
+      dateAdded: new Date().toLocaleDateString(),
+      photo: selectedPhoto
+    };
+
+    setDefects([...defects, newDefect]);
+    setDefectCounter(defectCounter + 1);
+    
+    // Clear form
+    setFormData({
+      ...formData,
+      defectDescription: '',
+      defectPriority: 'medium',
+      defectStatus: 'unassigned',
+      assignedTo: '',
+      actionItems: '',
+      defectComments: ''
+    });
+    setSelectedPhoto(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    saveCurrentCase();
+  };
+
+  const updateDefectStatus = (id, newStatus) => {
+    const updatedDefects = defects.map(d => 
+      d.id === id ? { ...d, status: newStatus } : d
+    );
+    setDefects(updatedDefects);
+    saveCurrentCase();
+  };
+
+  const deleteDefect = (id) => {
+    if (window.confirm('Are you sure you want to delete this defect?')) {
+      setDefects(defects.filter(d => d.id !== id));
+      saveCurrentCase();
+    }
+  };
+
+  const performSearch = (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearch(false);
+      return;
+    }
+
+    const matchingCases = cases.filter((caseItem, index) => {
+      const searchTerm = query.toLowerCase();
+      return caseItem.clientName.toLowerCase().includes(searchTerm) ||
+             caseItem.projectName.toLowerCase().includes(searchTerm) ||
+             caseItem.projectNumber.toLowerCase().includes(searchTerm) ||
+             `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
+    });
+
+    setSearchResults(matchingCases);
+    setShowSearch(true);
+  };
+
+  const switchToCase = (caseId) => {
+    saveCurrentCase();
+    const index = cases.findIndex(c => c.id === caseId);
+    if (index !== -1) {
+      setCurrentCaseIndex(index);
+      loadCase(index);
+    }
+    setSearchQuery('');
+    setShowSearch(false);
+  };
+
+  const getStats = () => {
+    const total = defects.length;
+    const open = defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length;
+    const fixed = defects.filter(d => d.status === 'fixed').length;
+    const verified = defects.filter(d => d.status === 'verified').length;
+    return { total, open, fixed, verified };
+  };
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'high': return '🔴';
+      case 'medium': return '🟡';
+      case 'low': return '🟢';
+      default: return '⚪';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'unassigned': return '⚪';
+      case 'assigned': return '🟡';
+      case 'in-progress': return '🔵';
+      case 'fixed': return '🔧';
+      case 'verified': return '✅';
+      default: return '⚪';
+    }
+  };
+
+  const generateReport = () => {
+    if (defects.length === 0) {
+      alert('No defects to include in the report!');
+      return;
+    }
+
+    const currentCase = cases[currentCaseIndex];
+    const stats = getStats();
+    
+    const reportData = {
+      caseInfo: {
+        id: currentCase.id,
+        clientName: currentCase.clientName || 'N/A',
+        projectName: currentCase.projectName || 'N/A',
+        projectNumber: currentCase.projectNumber || 'N/A',
+        inspectionDate: currentCase.inspectionDate || 'N/A',
+        inspectionConductedBy: currentCase.inspectionConductedBy || 'N/A',
+        reportGenerated: new Date().toLocaleDateString()
+      },
+      stats,
+      defects: defects.map(d => ({
+        ...d,
+        priorityIcon: getPriorityIcon(d.priority),
+        statusIcon: getStatusIcon(d.status)
+      }))
+    };
+
+    // Create downloadable JSON report
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Defect_Report_Case_${currentCase.id}_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    alert('Report downloaded successfully! This JSON file contains all case data and can be imported into other systems.');
+  };
+
+  const currentCase = cases[currentCaseIndex];
+  const stats = getStats();
+
+  if (showLanding) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center p-4">
+        <div className="text-center text-white max-w-md">
+          <div className="text-6xl mb-6 animate-bounce">🔍</div>
+          <h1 className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">
+            WABi & ESA<br/>Defect Tracker
+          </h1>
+          <p className="text-xl mb-6 opacity-90">
+            WABi & ESA Quality Control & Defect Management
+          </p>
+          <button
+            onClick={() => setShowLanding(false)}
+            className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          >
+            Start Inspection
+          </button>
+          <div className="mt-6 text-sm opacity-70">
+            Powered by Kaza 🌈
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-700 to-gray-900">
+      {/* Save Indicator */}
+      {saveIndicator && (
+        <div className="fixed top-4 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg font-semibold text-center z-50 shadow-lg">
+          ✓ Saved
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 shadow-lg">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowLanding(true)}
+            className="p-2 rounded-lg bg-white/20 backdrop-blur-sm"
+          >
+            <Home size={20} />
+          </button>
+          <div className="text-center">
+            <h1 className="text-xl font-bold">🔍 Defect Tracker</h1>
+            <p className="text-sm opacity-90">Quality Control & Defect Management</p>
+          </div>
+          <button
+            onClick={generateReport}
+            className="p-2 rounded-lg bg-white/20 backdrop-blur-sm"
+          >
+            <Download size={20} />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Case Navigation */}
+        <div className="bg-white rounded-xl p-4 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={createNewCase}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+            >
+              <Plus size={16} />
+              New Case
             </button>
-            
-            <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
-                Powered by Kaza Vi'Nova 🌈
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-800">
+                Case #{currentCase?.id || 1000}
+              </div>
+              <div className="text-sm text-gray-600">
+                {currentCaseIndex + 1} of {cases.length}
+              </div>
             </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigateCase(-1)}
+                disabled={currentCaseIndex === 0}
+                className="p-2 rounded-lg bg-gray-200 disabled:opacity-50"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <button
+                onClick={() => navigateCase(1)}
+                disabled={currentCaseIndex === cases.length - 1}
+                className="p-2 rounded-lg bg-gray-200 disabled:opacity-50"
+              >
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-    </div>
 
-    <!-- Main Application -->
-    <div id="mainApp" class="main-app hidden">
-    <div class="container">
-        <div class="header">
-            <h1>🔍 Defect Tracker</h1>
-            <p>Quality Control & Defect Management</p>
+        {/* Search */}
+        <div className="bg-white rounded-xl p-4 shadow-lg">
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search cases..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  performSearch(e.target.value);
+                }}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setShowSearch(false);
+              }}
+              className="bg-green-500 text-white px-4 py-3 rounded-lg"
+            >
+              Clear
+            </button>
+          </div>
+          {showSearch && (
+            <div className="space-y-2">
+              {searchResults.map((caseItem) => (
+                <div
+                  key={caseItem.id}
+                  onClick={() => switchToCase(caseItem.id)}
+                  className="p-3 bg-gray-50 rounded-lg border-l-4 border-green-500 cursor-pointer hover:bg-gray-100"
+                >
+                  <div className="font-semibold">Case #{caseItem.id}</div>
+                  <div className="text-sm text-gray-600">
+                    {caseItem.clientName || 'No client'} - {caseItem.projectName || 'No project'}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {caseItem.defects.length} defects
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        
-        <div class="content">
-            <!-- Save Indicator -->
-            <div id="saveIndicator" class="save-indicator">✓ Saved</div>
-       
-            <!-- Case Navigation -->
-            <div class="case-navigation">
-                <div class="case-controls">
-                    <button onclick="createNewCase()" class="btn" style="padding: 10px 15px; font-size: 14px;">+ New Case</button>
-                </div>
-                <div class="case-info">
-                    <div class="case-number" id="currentCaseNumber">Case #1000</div>
-                    <div style="color: #666; font-size: 0.9rem;" id="caseCounter">1 of 1</div>
-                </div>
-                <div class="case-controls">
-                    <button id="prevCase" class="nav-btn" onclick="navigateCase(-1)">← Previous</button>
-                    <button id="nextCase" class="nav-btn" onclick="navigateCase(1)">Next →</button>
-                </div>
-            </div>
 
-            <!-- Search Section -->
-            <div class="search-section">
-                <h3 style="margin-bottom: 15px; color: #84c441;">🔍 Search Cases</h3>
-                <div class="search-controls">
-                    <div class="form-group">
-                        <label for="searchInput">Search by Client Name, Project Name, or Project Number</label>
-                        <input type="text" id="searchInput" placeholder="Enter client name, project name, or project number..." oninput="performSearch()">
-                    </div>
-                    <button onclick="clearSearch()" class="btn btn-secondary" style="padding: 12px 20px; background: linear-gradient(135deg, #84c441 0%, #9fd356 100%); color: white;">Clear</button>
-                </div>
-                <div id="searchResults" class="search-results"></div>
-            </div>
-            <!-- Project Information -->
-            <div class="project-info">
-                <h2 style="margin-bottom: 20px; color: #84c441;">Project Information</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="clientName">Client Name</label>
-                        <input type="text" id="clientName" placeholder="Enter client name" onchange="saveCurrentCase()">
-                    </div>
-                    <div class="form-group">
-                        <label for="projectName">Project Name</label>
-                        <input type="text" id="projectName" placeholder="Enter project name" onchange="saveCurrentCase()">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="projectNumber">Project Number</label>
-                        <input type="text" id="projectNumber" placeholder="Enter project number" onchange="saveCurrentCase()">
-                    </div>
-                    <div class="form-group">
-                        <label for="inspectionDate">Inspection Date</label>
-                        <input type="date" id="inspectionDate" onchange="saveCurrentCase()">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="inspectionConductedBy">Inspection Conducted By</label>
-                    <input type="text" id="inspectionConductedBy" placeholder="Enter inspector name" onchange="saveCurrentCase()">
-                </div>
-            </div>
-
-            <!-- Statistics -->
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalDefects">0</div>
-                    <div class="stat-label">Total Defects</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="openDefects">0</div>
-                    <div class="stat-label">Open</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="fixedDefects">0</div>
-                    <div class="stat-label">Fixed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="verifiedDefects">0</div>
-                    <div class="stat-label">Verified</div>
-                </div>
-            </div>
-
-            <!-- Add New Defect -->
-            <div class="project-info">
-                <h2 style="margin-bottom: 20px; color: #84c441;">Add New Defect</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="defectDescription">Description</label>
-                        <textarea id="defectDescription" rows="3" placeholder="Describe the defect..."></textarea>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="defectPriority">Priority</label>
-                        <select id="defectPriority">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="defectStatus">Status</label>
-                        <select id="defectStatus">
-                            <option value="unassigned" selected>Unassigned</option>
-                            <option value="assigned">Assigned</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="fixed">Fixed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="assignedTo">Assigned To</label>
-                        <input type="text" id="assignedTo" placeholder="Enter name or team">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="actionItems">Action Items</label>
-                    <textarea id="actionItems" rows="2" placeholder="List specific actions needed to resolve this defect..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="defectComments">Comments/Notes</label>
-                    <textarea id="defectComments" rows="2" placeholder="Additional comments or notes..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="defectPhoto">Photo</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="defectPhoto" class="file-input" accept="image/*" capture="environment" onchange="previewImage(this)">
-                        <button type="button" class="btn">📷 Take/Upload Photo</button>
-                    </div>
-                    <div id="imagePreview" style="display: none; margin-top: 10px;">
-                        <img id="previewImg" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #e1e5e9;" alt="Photo preview">
-                        <button type="button" onclick="removeImage()" style="display: block; margin-top: 8px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 5px; font-size: 12px; cursor: pointer;">Remove Photo</button>
-                    </div>
-                </div>
-                <button onclick="addDefect()" class="btn" style="margin-top: 15px;">➕ Add Defect</button>
-            </div>
-
-            <!-- Case Actions -->
-            <div class="export-buttons">
-                <!-- Removed duplicate Save and Finish & Email buttons -->
-            </div>
-
-            <!-- Export Options -->
-            <div class="export-buttons">
-                <button onclick="exportToExcel()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📊 Export to Excel</button>
-                <button onclick="exportToPDF()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📄 Export to PDF</button>
-                <button onclick="downloadReport()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📥 Download Report</button>
-            </div>
-
-            <!-- Defects List -->
+        {/* Project Information */}
+        <div className="bg-white rounded-xl p-4 shadow-lg">
+          <h2 className="text-lg font-bold text-green-600 mb-4">Project Information</h2>
+          <div className="space-y-4">
             <div>
-                <h2 style="margin-bottom: 20px; color: #84c441;">Defects List</h2>
-                <div id="defectsList">
-                    <div class="empty-state">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">📋</div>
-                        <h3>No defects recorded yet</h3>
-                        <p>Add your first defect using the form above</p>
-                    </div>
-                </div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Client Name</label>
+              <input
+                type="text"
+                value={formData.clientName}
+                onChange={(e) => handleInputChange('clientName', e.target.value)}
+                onBlur={saveCurrentCase}
+                placeholder="Enter client name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
             </div>
-            
-            <!-- Footer -->
-            <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-                <button onclick="returnToHome()" class="btn" style="padding: 10px 20px; font-size: 14px; background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">
-                    🏠 Return to Home
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Project Name</label>
+              <input
+                type="text"
+                value={formData.projectName}
+                onChange={(e) => handleInputChange('projectName', e.target.value)}
+                onBlur={saveCurrentCase}
+                placeholder="Enter project name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Project Number</label>
+                <input
+                  type="text"
+                  value={formData.projectNumber}
+                  onChange={(e) => handleInputChange('projectNumber', e.target.value)}
+                  onBlur={saveCurrentCase}
+                  placeholder="Project #"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Inspection Date</label>
+                <input
+                  type="date"
+                  value={formData.inspectionDate}
+                  onChange={(e) => handleInputChange('inspectionDate', e.target.value)}
+                  onBlur={saveCurrentCase}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Inspection Conducted By</label>
+              <input
+                type="text"
+                value={formData.inspectionConductedBy}
+                onChange={(e) => handleInputChange('inspectionConductedBy', e.target.value)}
+                onBlur={saveCurrentCase}
+                placeholder="Enter inspector name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
+            <div className="text-2xl font-bold text-green-600">{stats.total}</div>
+            <div className="text-xs text-gray-600">Total</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
+            <div className="text-2xl font-bold text-orange-600">{stats.open}</div>
+            <div className="text-xs text-gray-600">Open</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
+            <div className="text-2xl font-bold text-blue-600">{stats.fixed}</div>
+            <div className="text-xs text-gray-600">Fixed</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
+            <div className="text-2xl font-bold text-green-600">{stats.verified}</div>
+            <div className="text-xs text-gray-600">Verified</div>
+          </div>
+        </div>
+
+        {/* Add New Defect */}
+        <div className="bg-white rounded-xl p-4 shadow-lg">
+          <h2 className="text-lg font-bold text-green-600 mb-4">Add New Defect</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+              <textarea
+                value={formData.defectDescription}
+                onChange={(e) => handleInputChange('defectDescription', e.target.value)}
+                placeholder="Describe the defect..."
+                rows={3}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
+                <select
+                  value={formData.defectPriority}
+                  onChange={(e) => handleInputChange('defectPriority', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <select
+                  value={formData.defectStatus}
+                  onChange={(e) => handleInputChange('defectStatus', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="unassigned">Unassigned</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="fixed">Fixed</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Assigned To</label>
+              <input
+                type="text"
+                value={formData.assignedTo}
+                onChange={(e) => handleInputChange('assignedTo', e.target.value)}
+                placeholder="Enter name or team"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Action Items</label>
+              <textarea
+                value={formData.actionItems}
+                onChange={(e) => handleInputChange('actionItems', e.target.value)}
+                placeholder="List specific actions needed..."
+                rows={2}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Comments/Notes</label>
+              <textarea
+                value={formData.defectComments}
+                onChange={(e) => handleInputChange('defectComments', e.target.value)}
+                placeholder="Additional comments..."
+                rows={2}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Photo</label>
+              <div className="relative">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoCapture}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full bg-green-500 text-white p-4 rounded-lg flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Camera size={20} />
+                  Take/Upload Photo
                 </button>
-                <div style="flex: 1; text-align: right;">Powered by Kaza Vi'Nova 🌈</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Finish Case Modal -->
-    <div id="finishModal" class="finish-modal">
-        <div class="finish-modal-content">
-            <h3>📧 Finish Case & Email Report</h3>
-            <p>This will generate a comprehensive PDF report with all photos and automatically open your email client to send to:</p>
-            <p><strong>people@wabisystems.com.au</strong></p>
-            <p>The PDF will be attached and ready to send. You can add additional recipients or modify the email before sending.</p>
-            <div class="finish-modal-buttons">
-                <button onclick="proceedWithFinish()" class="btn">📧 Generate & Email</button>
-                <button onclick="closeFinishModal()" class="btn btn-secondary">Cancel</button>
-            </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let cases = [];
-        let currentCaseIndex = 0;
-        let defects = [];
-        let defectCounter = 1;
-
-        // Landing page functionality
-        function enterApp() {
-            const landingPage = document.getElementById('landingPage');
-            const mainApp = document.getElementById('mainApp');
-            
-            landingPage.classList.add('hidden');
-            
-            setTimeout(() => {
-                mainApp.classList.remove('hidden');
-                landingPage.style.display = 'none';
-                initializeApp();
-            }, 500);
-        }
-
-        function returnToHome() {
-            const landingPage = document.getElementById('landingPage');
-            const mainApp = document.getElementById('mainApp');
-            
-            mainApp.classList.add('hidden');
-            
-            setTimeout(() => {
-                landingPage.style.display = 'flex';
-                landingPage.classList.remove('hidden');
-            }, 500);
-        }
-
-        // Initialize with first case
-        function initializeApp() {
-            cases = [{
-                id: 1000,
-                clientName: '',
-                projectName: '',
-                projectNumber: '',
-                inspectionDate: new Date().toISOString().split('T')[0],
-                inspectionConductedBy: '',
-                defects: [],
-                defectCounter: 1
-            }];
-            loadCase(0);
-        }
-
-        function createNewCase() {
-            saveCurrentCase();
-            const newCaseId = Math.max(...cases.map(c => c.id)) + 1;
-            const newCase = {
-                id: newCaseId,
-                clientName: '',
-                projectName: '',
-                projectNumber: '',
-                inspectionDate: new Date().toISOString().split('T')[0],
-                inspectionConductedBy: '',
-                defects: [],
-                defectCounter: 1
-            };
-            cases.push(newCase);
-            currentCaseIndex = cases.length - 1;
-            loadCase(currentCaseIndex);
-            showSaveIndicator();
-        }
-
-        function navigateCase(direction) {
-            saveCurrentCase();
-            const newIndex = currentCaseIndex + direction;
-            if (newIndex >= 0 && newIndex < cases.length) {
-                currentCaseIndex = newIndex;
-                loadCase(currentCaseIndex);
-            }
-        }
-
-        function loadCase(index) {
-            const currentCase = cases[index];
-            
-            // Load case data into form
-            document.getElementById('clientName').value = currentCase.clientName;
-            document.getElementById('projectName').value = currentCase.projectName;
-            document.getElementById('projectNumber').value = currentCase.projectNumber;
-            document.getElementById('inspectionDate').value = currentCase.inspectionDate;
-            document.getElementById('inspectionConductedBy').value = currentCase.inspectionConductedBy;
-            
-            // Load defects
-            defects = [...currentCase.defects];
-            defectCounter = currentCase.defectCounter;
-            
-            // Update UI
-            updateCaseNavigation();
-            renderDefects();
-            updateStats();
-        }
-
-        function saveCurrentCase() {
-            if (cases.length === 0) return;
-            
-            const currentCase = cases[currentCaseIndex];
-            currentCase.clientName = document.getElementById('clientName').value;
-            currentCase.projectName = document.getElementById('projectName').value;
-            currentCase.projectNumber = document.getElementById('projectNumber').value;
-            currentCase.inspectionDate = document.getElementById('inspectionDate').value;
-            currentCase.inspectionConductedBy = document.getElementById('inspectionConductedBy').value;
-            currentCase.defects = [...defects];
-            currentCase.defectCounter = defectCounter;
-            
-            showSaveIndicator();
-        }
-
-        function showSaveIndicator() {
-            const indicator = document.getElementById('saveIndicator');
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 2000);
-        }
-
-        function updateCaseNavigation() {
-            const caseNumberEl = document.getElementById('currentCaseNumber');
-            const caseCounterEl = document.getElementById('caseCounter');
-            const prevBtn = document.getElementById('prevCase');
-            const nextBtn = document.getElementById('nextCase');
-            
-            const currentCase = cases[currentCaseIndex];
-            const displayNumber = `Case #${currentCase.id}`;
-            
-            caseNumberEl.textContent = displayNumber;
-            caseCounterEl.textContent = `${currentCaseIndex + 1} of ${cases.length}`;
-            
-            prevBtn.disabled = currentCaseIndex === 0;
-            nextBtn.disabled = currentCaseIndex === cases.length - 1;
-        }
-
-        function performSearch() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const resultsContainer = document.getElementById('searchResults');
-            
-            if (!searchTerm.trim()) {
-                resultsContainer.style.display = 'none';
-                return;
-            }
-            
-            const matchingCases = cases.filter((caseItem, index) => {
-                return caseItem.clientName.toLowerCase().includes(searchTerm) ||
-                       caseItem.projectName.toLowerCase().includes(searchTerm) ||
-                       caseItem.projectNumber.toLowerCase().includes(searchTerm) ||
-                       `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
-            });
-            
-            if (matchingCases.length > 0) {
-                resultsContainer.innerHTML = matchingCases.map(caseItem => {
-                    const caseIndex = cases.findIndex(c => c.id === caseItem.id);
-                    const displayNumber = `Case #${caseItem.id}`;
-                    return `
-                        <div class="search-result-item" onclick="switchToCase(${caseIndex})">
-                            <strong>${displayNumber}</strong><br>
-                            <span style="color: #666;">${caseItem.clientName || 'No client'} - ${caseItem.projectName || 'No project'}</span><br>
-                            <span style="color: #666; font-size: 0.9em;">Project #: ${caseItem.projectNumber || 'N/A'}</span><br>
-                            <small>${caseItem.defects.length} defects</small>
-                        </div>
-                    `;
-                }).join('');
-                resultsContainer.style.display = 'block';
-            } else {
-                resultsContainer.innerHTML = '<div style="text-align: center; color: #666;">No cases found</div>';
-                resultsContainer.style.display = 'block';
-            }
-        }
-
-        function switchToCase(index) {
-            saveCurrentCase();
-            currentCaseIndex = index;
-            loadCase(currentCaseIndex);
-            clearSearch();
-        }
-
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchResults').style.display = 'none';
-        }
-
-        function finishCase() {
-            if (defects.length === 0) {
-                alert('No defects in this case to include in the report!');
-                return;
-            }
-            
-            saveCurrentCase();
-            document.getElementById('finishModal').style.display = 'flex';
-        }
-
-        function closeFinishModal() {
-            document.getElementById('finishModal').style.display = 'none';
-        }
-
-        function proceedWithFinish() {
-            closeFinishModal();
-            generateEmailWithPDF();
-        }
-
-        function generateEmailWithPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const currentCase = cases[currentCaseIndex];
-            const clientName = currentCase.clientName || 'N/A';
-            const projectName = currentCase.projectName || 'N/A';
-            const caseNumber = currentCase.caseNumber || `Case #${currentCase.id}`;
-            const inspectionDate = currentCase.inspectionDate || 'N/A';
-
-            let yPosition = 20;
-
-            // Header
-            doc.setFontSize(20);
-            doc.setFont(undefined, 'bold');
-            doc.text('Defect Tracking Report', 20, yPosition);
-            yPosition += 20;
-
-            // Project Information
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Case Number: ${caseNumber}`, 20, yPosition);
-            yPosition += 10;
-            doc.text(`Client: ${clientName}`, 20, yPosition);
-            yPosition += 10;
-            doc.text(`Project: ${projectName}`, 20, yPosition);
-            yPosition += 10;
-            doc.text(`Inspection Date: ${inspectionDate}`, 20, yPosition);
-            yPosition += 10;
-            doc.text(`Report Generated: ${new Date().toLocaleDateString()}`, 20, yPosition);
-            yPosition += 20;
-
-            // Summary
-            doc.setFont(undefined, 'bold');
-            doc.text('Summary:', 20, yPosition);
-            yPosition += 10;
-            doc.setFont(undefined, 'normal');
-            doc.text(`Total Defects: ${defects.length}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Open: ${defects.filter(d => d.status === 'open').length}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Fixed: ${defects.filter(d => d.status === 'fixed').length}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Verified: ${defects.filter(d => d.status === 'verified').length}`, 20, yPosition);
-            yPosition += 20;
-
-            // Defects List with Photos
-            doc.setFont(undefined, 'bold');
-            doc.text('Defects:', 20, yPosition);
-            yPosition += 15;
-
-            defects.forEach((defect, index) => {
-                if (yPosition > 200) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-
-                doc.setFont(undefined, 'bold');
-                doc.text(`#${defect.id} - ${defect.priority.toUpperCase()} Priority`, 20, yPosition);
-                yPosition += 8;
-                
-                doc.setFont(undefined, 'normal');
-                doc.text(`Status: ${defect.status.toUpperCase()}`, 20, yPosition);
-                yPosition += 8;
-                
-                if (defect.assignedTo) {
-                    doc.text(`Assigned To: ${defect.assignedTo}`, 20, yPosition);
-                    yPosition += 8;
-                }
-                
-                // Split long text
-                const descLines = doc.splitTextToSize(`Description: ${defect.description}`, 170);
-                doc.text(descLines, 20, yPosition);
-                yPosition += descLines.length * 8;
-                
-                if (defect.actionItems) {
-                    const actionLines = doc.splitTextToSize(`Action Items: ${defect.actionItems}`, 170);
-                    doc.text(actionLines, 20, yPosition);
-                    yPosition += actionLines.length * 8;
-                }
-                
-                if (defect.comments) {
-                    const commentLines = doc.splitTextToSize(`Comments: ${defect.comments}`, 170);
-                    doc.text(commentLines, 20, yPosition);
-                    yPosition += commentLines.length * 8;
-                }
-                
-                doc.text(`Date Added: ${defect.dateAdded}`, 20, yPosition);
-                yPosition += 8;
-                
-                // Add photo if available
-                if (defect.photo) {
-                    if (yPosition > 150) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    try {
-                        doc.addImage(defect.photo, 'JPEG', 20, yPosition, 80, 60);
-                        yPosition += 70;
-                    } catch (e) {
-                        doc.text('Photo: [Image could not be embedded]', 20, yPosition);
-                        yPosition += 8;
-                    }
-                }
-                
-                yPosition += 15;
-            });
-
-            // Generate PDF blob
-            const pdfBlob = doc.output('blob');
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-            
-            // Create email
-            const fileName = `Defect_Report_${caseNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
-            const subject = `Defect Report - ${caseNumber} - ${clientName}`;
-            const body = `Hi team,
-
-Please find attached the defect tracking report for:
-
-Case Number: ${caseNumber}
-Client: ${clientName}
-Project: ${projectName}
-Inspection Date: ${inspectionDate}
-
-Summary:
-- Total Defects: ${defects.length}
-- Open: ${defects.filter(d => d.status === 'open').length}
-- Fixed: ${defects.filter(d => d.status === 'fixed').length}
-- Verified: ${defects.filter(d => d.status === 'verified').length}
-
-The attached PDF contains detailed information about each defect including photos where available.
-
-Best regards`;
-
-            // Create mailto link
-            const mailtoLink = `mailto:people@wabisystems.com.au?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            
-            // Open email client
-            window.open(mailtoLink);
-            
-            // Also trigger PDF download for manual attachment
-            const downloadLink = document.createElement('a');
-            downloadLink.href = pdfUrl;
-            downloadLink.download = fileName;
-            downloadLink.click();
-            
-            // Show instructions
-            alert(`Email client opened and PDF downloaded!\n\nPlease manually attach the downloaded PDF file (${fileName}) to your email before sending.\n\nNote: Due to browser security limitations, the PDF cannot be automatically attached to the email.`);
-            
-            // Clean up
-            setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
-        }
-
-        function downloadReport() {
-            if (defects.length === 0) {
-                alert('No defects to include in the report!');
-                return;
-            }
-
-            const currentCase = cases[currentCaseIndex];
-            const clientName = currentCase.clientName || 'N/A';
-            const projectName = currentCase.projectName || 'N/A';
-            const caseNumber = currentCase.caseNumber || `Case #${currentCase.id}`;
-            const inspectionDate = currentCase.inspectionDate || 'N/A';
-
-            // Create comprehensive HTML report
-            const reportHTML = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defect Report - ${caseNumber}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-        .header {
-            background: linear-gradient(135deg, #84c441 0%, #9fd356 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .case-info {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            border-left: 5px solid #84c441;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #84c441;
-            margin-bottom: 5px;
-        }
-        .defect-item {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .defect-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .defect-number {
-            background: #84c441;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-        .priority-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .priority-high { background: #f8d7da; color: #721c24; }
-        .priority-medium { background: #fff3cd; color: #856404; }
-        .priority-low { background: #d1ecf1; color: #0c5460; }
-        .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .status-open { background: #fff3cd; color: #856404; }
-        .status-fixed { background: #d4edda; color: #155724; }
-        .status-verified { background: #d1ecf1; color: #0c5460; }
-        .photo-container {
-            margin: 15px 0;
-        }
-        .photo-preview {
-            max-width: 300px;
-            max-height: 300px;
-            border-radius: 10px;
-            border: 2px solid #e1e5e9;
-        }
-        .section-title {
-            color: #84c441;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 30px 0 20px 0;
-            border-bottom: 2px solid #84c441;
-            padding-bottom: 10px;
-        }
-        .info-row {
-            display: grid;
-            grid-template-columns: 150px 1fr;
-            margin-bottom: 10px;
-        }
-        .info-label {
-            font-weight: 600;
-            color: #666;
-        }
-        @media print {
-            body { background: white; }
-            .defect-item, .case-info, .stat-card { 
-                box-shadow: none; 
-                border: 1px solid #ddd; 
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🔍 DEFECT TRACKING REPORT</h1>
-        <p>Comprehensive Quality Control Documentation</p>
-    </div>
-
-    <div class="case-info">
-        <h2 style="color: #84c441; margin-bottom: 20px;">Case Information</h2>
-        <div class="info-row">
-            <div class="info-label">Case Number:</div>
-            <div>${caseNumber}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Client Name:</div>
-            <div>${clientName}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Project Name:</div>
-            <div>${projectName}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Inspection Date:</div>
-            <div>${inspectionDate}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-label">Report Generated:</div>
-            <div>${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
-        </div>
-    </div>
-
-    <div class="summary">
-        <div class="stat-card">
-            <div class="stat-number">${defects.length}</div>
-            <div>Total Defects</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${defects.filter(d => d.status === 'open').length}</div>
-            <div>Open</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${defects.filter(d => d.status === 'fixed').length}</div>
-            <div>Fixed</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${defects.filter(d => d.status === 'verified').length}</div>
-            <div>Verified</div>
-        </div>
-    </div>
-
-    <h2 class="section-title">Detailed Defect Listing</h2>
-
-    ${defects.map(defect => `
-        <div class="defect-item">
-            <div class="defect-header">
-                <div>
-                    <span class="defect-number">#${defect.id}</span>
-                    <span class="priority-badge priority-${defect.priority}">
-                        ${defect.priority === 'high' ? '🔴 High' : 
-                          defect.priority === 'medium' ? '🟡 Medium' : 
-                          '🟢 Low'} Priority
-                    </span>
+              </div>
+              {selectedPhoto && (
+                <div className="mt-3">
+                  <img
+                    src={selectedPhoto}
+                    alt="Preview"
+                    className="w-full max-w-xs rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    onClick={removePhoto}
+                    className="mt-2 bg-red-500 text-white px-3 py-1 rounded text-sm"
+                  >
+                    Remove Photo
+                  </button>
                 </div>
-                <div class="status-badge status-${defect.status}">
-                    ${defect.status === 'open' ? '⚠️ Open' : 
-                      defect.status === 'fixed' ? '🔧 Fixed' : 
-                      '✅ Verified'}
-                </div>
+              )}
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong>Description:</strong><br>
-                ${defect.description}
-            </div>
-            
-            ${defect.assignedTo ? `
-                <div style="margin-bottom: 15px;">
-                    <strong>Assigned To:</strong> ${defect.assignedTo}
-                </div>
-            ` : ''}
-            
-            ${defect.actionItems ? `
-                <div style="margin-bottom: 15px;">
-                    <strong>Action Items:</strong><br>
-                    ${defect.actionItems}
-                </div>
-            ` : ''}
-            
-            ${defect.comments ? `
-                <div style="margin-bottom: 15px;">
-                    <strong>Comments:</strong><br>
-                    ${defect.comments}
-                </div>
-            ` : ''}
-            
-            <div style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
-                <strong>Date Added:</strong> ${defect.dateAdded}
-            </div>
-            
-            ${defect.photo ? `
-                <div class="photo-container">
-                    <strong>Photo Evidence:</strong><br>
-                    <img src="${defect.photo}" alt="Defect photo" class="photo-preview">
-                </div>
-            ` : ''}
+            <button
+              onClick={addDefect}
+              className="w-full bg-green-600 text-white p-4 rounded-lg font-semibold flex items-center justify-center gap-2"
+            >
+              <Plus size={20} />
+              Add Defect
+            </button>
+          </div>
         </div>
-    `).join('')}
 
-    <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 15px; text-align: center; color: #666;">
-        <p>This report was generated by the Defect Tracking & QC App</p>
-        <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-    </div>
-</body>
-</html>`;
-
-            // Create and download the HTML file
-            const blob = new Blob([reportHTML], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = `Defect_Report_${caseNumber}_${new Date().toISOString().split('T')[0]}.html`;
-            downloadLink.click();
-            
-            // Clean up
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            
-            alert(`HTML report downloaded successfully!\n\nFile: Defect_Report_${caseNumber}_${new Date().toISOString().split('T')[0]}.html\n\nThis report can be:\n✓ Opened in any web browser\n✓ Printed to PDF\n✓ Shared via email\n✓ Viewed offline\n✓ Customized further if needed`);
-        }
-
-        // Set today's date as default
-        document.getElementById('inspectionDate').valueAsDate = new Date();
-
-        function addDefect() {
-            const description = document.getElementById('defectDescription').value;
-            const priority = document.getElementById('defectPriority').value;
-            const assignedTo = document.getElementById('assignedTo').value;
-            const actionItems = document.getElementById('actionItems').value;
-            const comments = document.getElementById('defectComments').value;
-            const photoFile = document.getElementById('defectPhoto').files[0];
-
-            if (!description.trim()) {
-                alert('Please enter a description for the defect.');
-                return;
-            }
-
-            const defect = {
-                id: defectCounter++,
-                description: description,
-                priority: priority,
-                assignedTo: assignedTo,
-                actionItems: actionItems,
-                comments: comments,
-                status: 'open',
-                dateAdded: new Date().toLocaleDateString(),
-                photo: null
-            };
-
-            if (photoFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    defect.photo = e.target.result;
-                    defects.push(defect);
-                    renderDefects();
-                    updateStats();
-                    clearForm();
-                };
-                reader.readAsDataURL(photoFile);
-            } else {
-                defects.push(defect);
-                renderDefects();
-                updateStats();
-                clearForm();
-                saveCurrentCase();
-            }
-        }
-
-        function clearForm() {
-            document.getElementById('defectDescription').value = '';
-            document.getElementById('defectPriority').value = 'medium';
-            document.getElementById('assignedTo').value = '';
-            document.getElementById('actionItems').value = '';
-            document.getElementById('defectComments').value = '';
-            document.getElementById('defectPhoto').value = '';
-        }
-
-        function renderDefects() {
-            const defectsList = document.getElementById('defectsList');
-            
-            if (defects.length === 0) {
-                defectsList.innerHTML = `
-                    <div class="empty-state">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">📋</div>
-                        <h3>No defects recorded yet</h3>
-                        <p>Add your first defect using the form above</p>
+        {/* Defects List */}
+        <div className="bg-white rounded-xl p-4 shadow-lg">
+          <h2 className="text-lg font-bold text-green-600 mb-4">Defects List</h2>
+          {defects.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Grid3X3 size={48} className="mx-auto mb-4 opacity-50" />
+              <h3 className="font-semibold mb-2">No defects recorded yet</h3>
+              <p>Add your first defect using the form above</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {defects.map((defect) => (
+                <div key={defect.id} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        #{defect.id}
+                      </span>
+                      <span className="text-lg">
+                        {getPriorityIcon(defect.priority)}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-600">
+                        {defect.priority.toUpperCase()}
+                      </span>
                     </div>
-                `;
-                return;
-            }
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {getStatusIcon(defect.status)}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-600">
+                        {defect.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-semibold">Description:</span> {defect.description}
+                    </div>
+                    {defect.assignedTo && (
+                      <div>
+                        <span className="font-semibold">Assigned To:</span> {defect.assignedTo}
+                      </div>
+                    )}
+                    {defect.actionItems && (
+                      <div>
+                        <span className="font-semibold">Action Items:</span> {defect.actionItems}
+                      </div>
+                    )}
+                    {defect.comments && (
+                      <div>
+                        <span className="font-semibold">Comments:</span> {defect.comments}
+                      </div>
+                    )}
+                    <div className="text-gray-500">
+                      <span className="font-semibold">Date Added:</span> {defect.dateAdded}
+                    </div>
+                  </div>
 
-            defectsList.innerHTML = defects.map(defect => `
-                <div class="defect-item">
-                    <div class="defect-header">
-                        <div>
-                            <span class="defect-number">#${defect.id}</span>
-                            <span class="priority-badge priority-${defect.priority}">
-                                ${defect.priority === 'high' ? '🔴 High' : 
-                                  defect.priority === 'medium' ? '🟡 Medium' : 
-                                  '🟢 Low'} Priority
-                            </span>
-                        </div>
-                        <div class="status-badge status-${defect.status}">
-                            ${defect.status === 'unassigned' ? '⚪ Unassigned' : 
-                              defect.status === 'assigned' ? '🟡 Assigned' : 
-                              defect.status === 'in-progress' ? '🔵 In Progress' :
-                              defect.status === 'fixed' ? '🟢 Fixed' : 
-                              '✅ Verified'}
-                        </div>
+                  {defect.photo && (
+                    <div className="mt-3">
+                      <img
+                        src={defect.photo}
+                        alt="Defect"
+                        className="w-full max-w-xs rounded-lg border-2 border-gray-300"
+                      />
                     </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>Description:</strong> ${defect.description}
-                    </div>
-                    ${defect.assignedTo ? `
-                        <div style="margin-bottom: 10px;">
-                            <strong>Assigned To:</strong> ${defect.assignedTo}
-                        </div>
-                    ` : ''}
-                    ${defect.actionItems ? `
-                        <div style="margin-bottom: 10px;">
-                            <strong>Action Items:</strong> ${defect.actionItems}
-                        </div>
-                    ` : ''}
-                    ${defect.comments ? `
-                        <div style="margin-bottom: 10px;">
-                            <strong>Comments:</strong> ${defect.comments}
-                        </div>
-                    ` : ''}
-                    <div style="margin-bottom: 10px; font-size: 0.9em; color: #666;">
-                        <strong>Date Added:</strong> ${defect.dateAdded}
-                    </div>
-                    ${defect.photo ? `
-                        <div class="photo-container">
-                            <img src="${defect.photo}" alt="Defect photo" class="photo-preview">
-                        </div>
-                    ` : ''}
-                    <div class="defect-actions">
-                        <select onchange="updateDefectStatus(${defect.id}, this.value)" style="margin-right: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
-                            <option value="unassigned" ${defect.status === 'unassigned' ? 'selected' : ''}>Unassigned</option>
-                            <option value="assigned" ${defect.status === 'assigned' ? 'selected' : ''}>Assigned</option>
-                            <option value="in-progress" ${defect.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                            <option value="fixed" ${defect.status === 'fixed' ? 'selected' : ''}>Fixed</option>
-                            <option value="verified" ${defect.status === 'verified' ? 'selected' : ''}>Verified</option>
-                        </select>
-                        <button onclick="deleteDefect(${defect.id})" class="btn btn-danger">
-                            🗑️ Delete
-                        </button>
-                    </div>
+                  )}
+
+                  <div className="flex gap-2 mt-4">
+                    <select
+                      value={defect.status}
+                      onChange={(e) => updateDefectStatus(defect.id, e.target.value)}
+                      className="flex-1 p-2 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="unassigned">Unassigned</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="fixed">Fixed</option>
+                      <option value="verified">Verified</option>
+                    </select>
+                    <button
+                      onClick={() => deleteDefect(defect.id)}
+                      className="bg-red-500 text-white p-2 rounded"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-            `).join('');
-        }
+              ))}
+            </div>
+          )}
+        </div>
 
-        function updateDefectStatus(id, newStatus) {
-            const defect = defects.find(d => d.id === id);
-            if (defect) {
-                defect.status = newStatus;
-                renderDefects();
-                updateStats();
-                saveCurrentCase();
-            }
-        }
+        {/* Footer */}
+        <div className="bg-white rounded-xl p-4 shadow-lg text-center">
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => setShowLanding(true)}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Home size={16} />
+              Return to Home
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={saveCurrentCase}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <Check size={16} />
+                Save
+              </button>
+              <button
+                onClick={generateReport}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <Download size={16} />
+                Export Data
+              </button>
+            </div>
+          </div>
 
-        function deleteDefect(id) {
-            if (confirm('Are you sure you want to delete this defect?')) {
-                defects = defects.filter(d => d.id !== id);
-                renderDefects();
-                updateStats();
-                saveCurrentCase();
-            }
-        }
+        </div>
 
-        function updateStats() {
-            const total = defects.length;
-            const openDefects = defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length;
-            const fixed = defects.filter(d => d.status === 'fixed').length;
-            const verified = defects.filter(d => d.status === 'verified').length;
+        {/* Finish Modal */}
+        {showFinishModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-lg font-bold text-green-600 mb-4">📧 Finish Case & Export</h3>
+              <p className="text-gray-700 mb-4">
+                This will generate a comprehensive report with all photos and data for case #{currentCase?.id}.
+              </p>
+              <p className="text-gray-700 mb-6">
+                The report will be downloaded as a JSON file that can be shared or imported into other systems.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowFinishModal(false);
+                    generateReport();
+                  }}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold"
+                >
+                  📧 Generate Report
+                </button>
+                <button
+                  onClick={() => setShowFinishModal(false)}
+                  className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-            document.getElementById('totalDefects').textContent = total;
-            document.getElementById('openDefects').textContent = openDefects;
-            document.getElementById('fixedDefects').textContent = fixed;
-            document.getElementById('verifiedDefects').textContent = verified;
-        }
+        {/* Add spacing at bottom for mobile */}
+        <div className="h-20"></div>
+      </div>
+    </div>
+  );
+};
 
-        // Handle Enter key in form fields
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-                e.preventDefault();
-                addDefect();
-            }
-        });
-
-        function exportToExcel() {
-            if (defects.length === 0) {
-                alert('No defects to export!');
-                return;
-            }
-
-            const currentCase = cases[currentCaseIndex];
-            const clientName = currentCase.clientName || 'N/A';
-            const projectName = currentCase.projectName || 'N/A';
-            const caseNumber = currentCase.caseNumber || `Case #${currentCase.id}`;
-            const inspectionDate = currentCase.inspectionDate || 'N/A';
-
-            // Prepare comprehensive data for Excel
-            const excelData = defects.map(defect => ({
-                'Case Number': caseNumber,
-                'Client Name': clientName,
-                'Project Name': projectName,
-                'Inspection Date': inspectionDate,
-                'Item #': defect.id,
-                'Description': defect.description,
-                'Priority': defect.priority.toUpperCase(),
-                'Assigned To': defect.assignedTo || 'N/A',
-                'Action Items': defect.actionItems || 'N/A',
-                'Comments': defect.comments || 'N/A',
-                'Status': defect.status.toUpperCase(),
-                'Date Added': defect.dateAdded,
-                'Has Photo': defect.photo ? 'Yes' : 'No',
-                'Photo Data': defect.photo ? 'Photo included in separate sheet' : 'No photo'
-            }));
-
-            // Create workbook
-            const wb = XLSX.utils.book_new();
-            
-            // Add project info sheet
-            const projectInfo = [
-                ['Case Information', ''],
-                ['Case Number', caseNumber],
-                ['Client Name', clientName],
-                ['Project Name', projectName],
-                ['Inspection Date', inspectionDate],
-                ['Report Generated', new Date().toLocaleDateString()],
-                ['Total Defects', defects.length],
-                ['', ''],
-                ['Status Summary', ''],
-                ['Open Defects', defects.filter(d => d.status === 'open').length],
-                ['Fixed Defects', defects.filter(d => d.status === 'fixed').length],
-                ['Verified Defects', defects.filter(d => d.status === 'verified').length],
-                ['', ''],
-                ['Priority Breakdown', ''],
-                ['High Priority', defects.filter(d => d.priority === 'high').length],
-                ['Medium Priority', defects.filter(d => d.priority === 'medium').length],
-                ['Low Priority', defects.filter(d => d.priority === 'low').length],
-                ['', ''],
-                ['Assigned Personnel', ''],
-                ...Array.from(new Set(defects.filter(d => d.assignedTo).map(d => d.assignedTo)))
-                    .map(person => [person, defects.filter(d => d.assignedTo === person).length + ' defects'])
-            ];
-            
-            const infoWs = XLSX.utils.aoa_to_sheet(projectInfo);
-            
-            // Style the info sheet
-            if (!infoWs['!cols']) infoWs['!cols'] = [];
-            infoWs['!cols'][0] = { wch: 20 };
-            infoWs['!cols'][1] = { wch: 30 };
-            
-            XLSX.utils.book_append_sheet(wb, infoWs, 'Case Summary');
-
-            // Add comprehensive defects sheet
-            const defectsWs = XLSX.utils.json_to_sheet(excelData);
-            
-            // Style the defects sheet
-            if (!defectsWs['!cols']) defectsWs['!cols'] = [];
-            defectsWs['!cols'][0] = { wch: 15 }; // Case Number
-            defectsWs['!cols'][1] = { wch: 20 }; // Client Name
-            defectsWs['!cols'][2] = { wch: 25 }; // Project Name
-            defectsWs['!cols'][3] = { wch: 15 }; // Inspection Date
-            defectsWs['!cols'][4] = { wch: 10 }; // Item #
-            defectsWs['!cols'][5] = { wch: 40 }; // Description
-            defectsWs['!cols'][6] = { wch: 12 }; // Priority
-            defectsWs['!cols'][7] = { wch: 20 }; // Assigned To
-            defectsWs['!cols'][8] = { wch: 40 }; // Action Items
-            defectsWs['!cols'][9] = { wch: 30 }; // Comments
-            defectsWs['!cols'][10] = { wch: 12 }; // Status
-            defectsWs['!cols'][11] = { wch: 15 }; // Date Added
-            defectsWs['!cols'][12] = { wch: 12 }; // Has Photo
-            defectsWs['!cols'][13] = { wch: 25 }; // Photo Data
-            
-            XLSX.utils.book_append_sheet(wb, defectsWs, 'Detailed Defects');
-
-            // Add photos sheet if there are photos
-            const defectsWithPhotos = defects.filter(d => d.photo);
-            if (defectsWithPhotos.length > 0) {
-                const photoData = defectsWithPhotos.map(defect => ({
-                    'Item #': defect.id,
-                    'Case Number': caseNumber,
-                    'Description': defect.description,
-                    'Priority': defect.priority.toUpperCase(),
-                    'Status': defect.status.toUpperCase(),
-                    'Photo Note': 'Photo data is embedded as base64. To view, copy the data below and paste into a base64 to image converter.',
-                    'Photo Data (Base64)': defect.photo
-                }));
-                
-                const photoWs = XLSX.utils.json_to_sheet(photoData);
-                
-                // Style the photos sheet
-                if (!photoWs['!cols']) photoWs['!cols'] = [];
-                photoWs['!cols'][0] = { wch: 10 }; // Item #
-                photoWs['!cols'][1] = { wch: 15 }; // Case Number
-                photoWs['!cols'][2] = { wch: 40 }; // Description
-                photoWs['!cols'][3] = { wch: 12 }; // Priority
-                photoWs['!cols'][4] = { wch: 12 }; // Status
-                photoWs['!cols'][5] = { wch: 50 }; // Photo Note
-                photoWs['!cols'][6] = { wch: 100 }; // Photo Data
-                
-                XLSX.utils.book_append_sheet(wb, photoWs, 'Photos');
-            }
-
-            // Add action items summary sheet
-            const actionItemsData = defects
-                .filter(d => d.actionItems)
-                .map(defect => ({
-                    'Item #': defect.id,
-                    'Case Number': caseNumber,
-                    'Priority': defect.priority.toUpperCase(),
-                    'Status': defect.status.toUpperCase(),
-                    'Assigned To': defect.assignedTo || 'Unassigned',
-                    'Description': defect.description,
-                    'Action Items': defect.actionItems,
-                    'Date Added': defect.dateAdded
-                }));
-
-            if (actionItemsData.length > 0) {
-                const actionWs = XLSX.utils.json_to_sheet(actionItemsData);
-                
-                // Style the action items sheet
-                if (!actionWs['!cols']) actionWs['!cols'] = [];
-                actionWs['!cols'][0] = { wch: 10 }; // Item #
-                actionWs['!cols'][1] = { wch: 15 }; // Case Number
-                actionWs['!cols'][2] = { wch: 12 }; // Priority
-                actionWs['!cols'][3] = { wch: 12 }; // Status
-                actionWs['!cols'][4] = { wch: 20 }; // Assigned To
-                actionWs['!cols'][5] = { wch: 40 }; // Description
-                actionWs['!cols'][6] = { wch: 50 }; // Action Items
-                actionWs['!cols'][7] = { wch: 15 }; // Date Added
-                
-                XLSX.utils.book_append_sheet(wb, actionWs, 'Action Items');
-            }
-
-            // Save file
-            const fileName = `Comprehensive_Defect_Report_${caseNumber}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-            
-            // Show completion message
-            let message = `Excel report exported successfully!\n\nIncluded sheets:\n✓ Case Summary\n✓ Detailed Defects`;
-            if (defectsWithPhotos.length > 0) {
-                message += `\n✓ Photos (${defectsWithPhotos.length} photos included as base64 data)`;
-            }
-            if (actionItemsData.length > 0) {
-                message += `\n✓ Action Items Summary`;
-            }
-            message += `\n\nFile: ${fileName}`;
-            
-            alert(message);
-        }
-
-        function exportToPDF() {
-            if (defects.length === 0) {
-                alert('No defects to export!');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const currentCase = cases[currentCaseIndex];
-            const clientName = currentCase.clientName || 'N/A';
-            const projectName = currentCase.projectName || 'N/A';
-            const caseNumber = currentCase.caseNumber || `Case #${currentCase.id}`;
-            const inspectionDate = currentCase.inspectionDate || 'N/A';
-
-            let yPosition = 20;
-
-            // Header
-            doc.setFontSize(24);
-            doc.setFont(undefined, 'bold');
-            doc.text('COMPREHENSIVE DEFECT REPORT', 20, yPosition);
-            yPosition += 25;
-
-            // Case Information Box
-            doc.setDrawColor(132, 196, 65); // #84c441
-            doc.setLineWidth(2);
-            doc.rect(15, yPosition - 5, 180, 50);
-            
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('CASE INFORMATION', 20, yPosition + 5);
-            yPosition += 15;
-            
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Case Number: ${caseNumber}`, 20, yPosition);
-            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 120, yPosition);
-            yPosition += 8;
-            doc.text(`Client: ${clientName}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Project: ${projectName}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Inspection Date: ${inspectionDate}`, 20, yPosition);
-            yPosition += 20;
-
-            // Executive Summary
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('EXECUTIVE SUMMARY', 20, yPosition);
-            yPosition += 10;
-            
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'normal');
-            const totalDefects = defects.length;
-            const openDefects = defects.filter(d => d.status === 'open').length;
-            const fixedDefects = defects.filter(d => d.status === 'fixed').length;
-            const verifiedDefects = defects.filter(d => d.status === 'verified').length;
-            const highPriority = defects.filter(d => d.priority === 'high').length;
-            const mediumPriority = defects.filter(d => d.priority === 'medium').length;
-            const lowPriority = defects.filter(d => d.priority === 'low').length;
-            
-            doc.text(`Total Defects Identified: ${totalDefects}`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Status Breakdown: ${openDefects} Open, ${fixedDefects} Fixed, ${verifiedDefects} Verified`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Priority Distribution: ${highPriority} High, ${mediumPriority} Medium, ${lowPriority} Low`, 20, yPosition);
-            yPosition += 8;
-            doc.text(`Photos Included: ${defects.filter(d => d.photo).length} defects have photographic evidence`, 20, yPosition);
-            yPosition += 20;
-
-            // Personnel Assignments
-            const assignedPersonnel = Array.from(new Set(defects.filter(d => d.assignedTo).map(d => d.assignedTo)));
-            if (assignedPersonnel.length > 0) {
-                doc.setFont(undefined, 'bold');
-                doc.text('PERSONNEL ASSIGNMENTS', 20, yPosition);
-                yPosition += 10;
-                doc.setFont(undefined, 'normal');
-                assignedPersonnel.forEach(person => {
-                    const count = defects.filter(d => d.assignedTo === person).length;
-                    doc.text(`• ${person}: ${count} defect${count > 1 ? 's' : ''}`, 25, yPosition);
-                    yPosition += 8;
-                });
-                yPosition += 10;
-            }
-
-            // Start new page for defects
-            doc.addPage();
-            yPosition = 20;
-
-            // Detailed Defects
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text('DETAILED DEFECT LISTING', 20, yPosition);
-            yPosition += 20;
-
-            defects.forEach((defect, index) => {
-                // Check if we need a new page
-                if (yPosition > 200) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-
-                // Defect header with border
-                doc.setDrawColor(132, 196, 65);
-                doc.setLineWidth(1);
-                doc.rect(15, yPosition - 5, 180, 15);
-                
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                const priorityIcon = defect.priority === 'high' ? '🔴' : defect.priority === 'medium' ? '🟡' : '🟢';
-                const statusIcon = defect.status === 'open' ? '⚠️' : defect.status === 'fixed' ? '🔧' : '✅';
-                doc.text(`DEFECT #${defect.id} - ${defect.priority.toUpperCase()} PRIORITY ${statusIcon}`, 20, yPosition + 5);
-                yPosition += 20;
-                
-                // Defect details
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text('Status:', 20, yPosition);
-                doc.setFont(undefined, 'normal');
-                doc.text(defect.status.toUpperCase(), 45, yPosition);
-                
-                doc.setFont(undefined, 'bold');
-                doc.text('Date Added:', 100, yPosition);
-                doc.setFont(undefined, 'normal');
-                doc.text(defect.dateAdded, 140, yPosition);
-                yPosition += 8;
-                
-                if (defect.assignedTo) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text('Assigned To:', 20, yPosition);
-                    doc.setFont(undefined, 'normal');
-                    doc.text(defect.assignedTo, 60, yPosition);
-                    yPosition += 8;
-                }
-                
-                // Description
-                doc.setFont(undefined, 'bold');
-                doc.text('Description:', 20, yPosition);
-                yPosition += 6;
-                doc.setFont(undefined, 'normal');
-                const descLines = doc.splitTextToSize(defect.description, 170);
-                doc.text(descLines, 20, yPosition);
-                yPosition += descLines.length * 6 + 4;
-                
-                // Action Items
-                if (defect.actionItems) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text('Action Items:', 20, yPosition);
-                    yPosition += 6;
-                    doc.setFont(undefined, 'normal');
-                    const actionLines = doc.splitTextToSize(defect.actionItems, 170);
-                    doc.text(actionLines, 20, yPosition);
-                    yPosition += actionLines.length * 6 + 4;
-                }
-                
-                // Comments
-                if (defect.comments) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text('Comments:', 20, yPosition);
-                    yPosition += 6;
-                    doc.setFont(undefined, 'normal');
-                    const commentLines = doc.splitTextToSize(defect.comments, 170);
-                    doc.text(commentLines, 20, yPosition);
-                    yPosition += commentLines.length * 6 + 4;
-                }
-                
-                // Photo
-                if (defect.photo) {
-                    // Check if we have space for photo
-                    if (yPosition > 150) {
-                        doc.addPage();
-                        yPosition = 20;
-                        doc.setFontSize(10);
-                        doc.setFont(undefined, 'bold');
-                        doc.text(`DEFECT #${defect.id} - PHOTO EVIDENCE (continued)`, 20, yPosition);
-                        yPosition += 15;
-                    }
-                    
-                    doc.setFont(undefined, 'bold');
-                    doc.text('Photo Evidence:', 20, yPosition);
-                    yPosition += 8;
-                    
-                    try {
-                        // Add photo with border
-                        const imgWidth = 120;
-                        const imgHeight = 90;
-                        doc.setDrawColor(132, 196, 65);
-                        doc.setLineWidth(2);
-                        doc.rect(18, yPosition - 2, imgWidth + 4, imgHeight + 4);
-                        doc.addImage(defect.photo, 'JPEG', 20, yPosition, imgWidth, imgHeight);
-                        yPosition += imgHeight + 10;
-                    } catch (e) {
-                        doc.setFont(undefined, 'italic');
-                        doc.text('[Photo could not be embedded - see original file]', 20, yPosition);
-                        yPosition += 8;
-                    }
-                } else {
-                    doc.setFont(undefined, 'italic');
-                    doc.text('No photo available', 20, yPosition);
-                    yPosition += 8;
-                }
-                
-                yPosition += 15;
-            });
-
-            // Summary page
-            doc.addPage();
-            yPosition = 20;
-            
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text('INSPECTION SUMMARY & RECOMMENDATIONS', 20, yPosition);
-            yPosition += 20;
-            
-            // Critical items
-            const criticalItems = defects.filter(d => d.priority === 'high' && d.status === 'open');
-            if (criticalItems.length > 0) {
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('🔴 CRITICAL ITEMS REQUIRING IMMEDIATE ATTENTION:', 20, yPosition);
-                yPosition += 10;
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                criticalItems.forEach(item => {
-                    const line = `• Defect #${item.id}: ${item.description.substring(0, 80)}${item.description.length > 80 ? '...' : ''}`;
-                    const lines = doc.splitTextToSize(line, 170);
-                    doc.text(lines, 25, yPosition);
-                    yPosition += lines.length * 6 + 2;
-                });
-                yPosition += 10;
-            }
-            
-            // Outstanding actions
-            const outstandingActions = defects.filter(d => d.status === 'open');
-            if (outstandingActions.length > 0) {
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('⚠️ OUTSTANDING ACTIONS:', 20, yPosition);
-                yPosition += 10;
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.text(`${outstandingActions.length} defects remain open and require resolution.`, 25, yPosition);
-                yPosition += 8;
-                doc.text('Recommend follow-up inspection after remedial work completion.', 25, yPosition);
-                yPosition += 15;
-            }
-            
-            // Footer
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'italic');
-            doc.text('This report was generated by the Defect Tracking & QC App', 20, 280);
-            doc.text(`Report generated: ${new Date().toLocaleString()}`, 20, 285);
-
-            // Save PDF
-            const fileName = `Comprehensive_Defect_Report_${caseNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-            
-            alert(`Comprehensive PDF report generated successfully!\n\nFile: ${fileName}\n\nIncludes:\n✓ Executive summary\n✓ All case details\n✓ ${defects.filter(d => d.photo).length} embedded photos\n✓ Personnel assignments\n✓ Action items\n✓ Professional formatting`);
-        }
-
-        // Initialize the app (called after landing page)
-        // Don't auto-initialize on page load anymore
-    </script>
-</body>
-</html>
+export default DefectTrackerApp;
