@@ -2,53 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#84c441">
+    <meta name="msapplication-TileColor" content="#84c441">
     <title>Defect Tracking & QC App</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        /* Universal responsive base */
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        /* Mobile-first improvements */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: rgba(132, 196, 65, 0.2);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #494949 0%, #3a3a3a 100%);
             min-height: 100vh;
-            padding: 20px;
+            min-height: -webkit-fill-available;
+            padding: clamp(10px, 3vw, 20px);
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
+            border-radius: clamp(10px, 2vw, 20px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
+            min-height: calc(100vh - clamp(20px, 6vw, 40px));
         }
 
         .header {
             background: linear-gradient(135deg, #84c441 0%, #9fd356 100%);
             color: white;
-            padding: 30px;
+            padding: clamp(20px, 5vw, 30px);
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             font-weight: 700;
             margin-bottom: 10px;
         }
 
         .header p {
             opacity: 0.9;
-            font-size: 1.1rem;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
         }
 
         .content {
-            padding: 30px;
+            padding: clamp(15px, 4vw, 30px);
         }
 
         .project-info {
@@ -88,6 +108,9 @@
             border-radius: 10px;
             font-size: 16px;
             transition: border-color 0.3s;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         input:focus, textarea:focus, select:focus {
@@ -221,20 +244,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 20px;
+            margin-bottom: clamp(15px, 3vw, 20px);
+            padding: clamp(15px, 3vw, 20px);
             background: white;
-            border-radius: 15px;
+            border-radius: clamp(10px, 2vw, 15px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: clamp(10px, 2vw, 15px);
         }
 
         .case-info {
             text-align: center;
             flex-grow: 1;
+            min-width: 200px;
         }
 
         .case-number {
-            font-size: 1.5rem;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
             font-weight: 700;
             color: #494949;
             margin-bottom: 5px;
@@ -242,8 +268,10 @@
 
         .case-controls {
             display: flex;
-            gap: 10px;
+            gap: clamp(8px, 2vw, 10px);
             align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .nav-btn {
@@ -451,6 +479,10 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
             .container {
                 margin: 0;
                 border-radius: 0;
@@ -458,15 +490,64 @@
             }
             
             .header {
-                padding: 20px;
+                padding: 20px 15px;
             }
             
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
             }
             
             .content {
-                padding: 20px;
+                padding: 15px;
+            }
+            
+            .case-navigation {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .case-controls {
+                order: 1;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .case-info {
+                order: 0;
+                text-align: center;
+            }
+            
+            .case-controls .btn,
+            .case-controls .nav-btn {
+                padding: 12px 16px;
+                font-size: 14px;
+                margin: 5px;
+                min-width: 120px;
+            }
+            
+            .search-section {
+                padding: 15px;
+            }
+            
+            .search-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .search-controls .form-group {
+                min-width: auto;
+                width: 100%;
+            }
+            
+            .search-controls .btn {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
             }
             
             .form-row {
@@ -475,15 +556,199 @@
             
             .form-row .form-group {
                 min-width: auto;
+                width: 100%;
+            }
+            
+            input, textarea, select {
+                font-size: 16px;
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .btn {
+                padding: 15px 25px;
+                font-size: 16px;
+                min-height: 48px;
+                border-radius: 12px;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .export-buttons .btn {
+                width: 100%;
+                padding: 15px;
             }
             
             .defect-header {
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .defect-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .defect-actions .btn {
+                width: 100%;
+                text-align: center;
             }
             
             .stats {
                 flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stat-card {
+                min-width: auto;
+                width: 100%;
+                padding: 20px;
+            }
+            
+            .stat-number {
+                font-size: 2.5rem;
+            }
+            
+            .photo-preview {
+                max-width: 100%;
+                max-height: 250px;
+            }
+            
+            .finish-modal-content {
+                width: 95%;
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .finish-modal-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .finish-modal-buttons .btn {
+                width: 100%;
+            }
+            
+            .save-indicator {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                text-align: center;
+                border-radius: 15px;
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+            
+            .project-info,
+            .search-section,
+            .defect-item {
+                margin-bottom: 20px;
+                border-radius: 15px;
+            }
+            
+            .case-number {
+                font-size: 1.3rem;
+            }
+            
+            /* Improve touch targets */
+            .nav-btn:disabled {
+                background: #dee2e6;
+                color: #6c757d;
+            }
+            
+            /* Better spacing for mobile */
+            h2 {
+                font-size: 1.3rem;
+                margin-bottom: 15px;
+            }
+            
+            h3 {
+                font-size: 1.1rem;
+                margin-bottom: 10px;
+            }
+            
+            /* Mobile-friendly file input */
+            .file-input-wrapper .btn {
+                width: 100%;
+                padding: 20px;
+                font-size: 16px;
+                background: linear-gradient(135deg, #84c441 0%, #9fd356 100%);
+                border: 2px dashed rgba(132, 196, 65, 0.3);
+                color: white;
+            }
+            
+            /* Improve form labels */
+            label {
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #333;
+            }
+            
+            /* Better search results for mobile */
+            .search-result-item {
+                padding: 15px;
+                margin: 8px 0;
+                border-radius: 12px;
+                font-size: 14px;
+            }
+            
+            /* Responsive priority and status badges */
+            .priority-badge,
+            .status-badge {
+                font-size: 11px;
+                padding: 6px 12px;
+                margin: 2px 0;
+            }
+            
+            .defect-number {
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+            
+            /* Mobile-optimized empty state */
+            .empty-state {
+                padding: 60px 20px;
+            }
+            
+            .empty-state h3 {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+            
+            .case-navigation,
+            .search-section,
+            .project-info {
+                padding: 12px;
+            }
+            
+            .defect-item {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 15px;
+            }
+            
+            .finish-modal-content {
+                width: 98%;
+                padding: 15px;
             }
         }
     </style>
@@ -521,10 +786,10 @@
                 <h3 style="margin-bottom: 15px; color: #84c441;">🔍 Search Cases</h3>
                 <div class="search-controls">
                     <div class="form-group">
-                        <label for="searchInput">Search by Client Name or Case Number</label>
-                        <input type="text" id="searchInput" placeholder="Enter client name or case number..." oninput="performSearch()">
+                        <label for="searchInput">Search by Client Name, Project Name, or Project Number</label>
+                        <input type="text" id="searchInput" placeholder="Enter client name, project name, or project number..." oninput="performSearch()">
                     </div>
-                    <button onclick="clearSearch()" class="btn btn-secondary" style="padding: 12px 20px; background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">Clear</button>
+                    <button onclick="clearSearch()" class="btn btn-secondary" style="padding: 12px 20px; background: linear-gradient(135deg, #84c441 0%, #9fd356 100%); color: white;">Clear</button>
                 </div>
                 <div id="searchResults" class="search-results"></div>
             </div>
@@ -533,23 +798,27 @@
                 <h2 style="margin-bottom: 20px; color: #84c441;">Project Information</h2>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="caseNumber">Case Number</label>
-                        <input type="text" id="caseNumber" placeholder="Enter case number" onchange="saveCurrentCase()">
-                    </div>
-                    <div class="form-group">
                         <label for="clientName">Client Name</label>
                         <input type="text" id="clientName" placeholder="Enter client name" onchange="saveCurrentCase()">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectName">Project Name</label>
+                        <input type="text" id="projectName" placeholder="Enter project name" onchange="saveCurrentCase()">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="projectName">Project Name</label>
-                        <input type="text" id="projectName" placeholder="Enter project name" onchange="saveCurrentCase()">
+                        <label for="projectNumber">Project Number</label>
+                        <input type="text" id="projectNumber" placeholder="Enter project number" onchange="saveCurrentCase()">
                     </div>
                     <div class="form-group">
                         <label for="inspectionDate">Inspection Date</label>
                         <input type="date" id="inspectionDate" onchange="saveCurrentCase()">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="inspectionConductedBy">Inspection Conducted By</label>
+                    <input type="text" id="inspectionConductedBy" placeholder="Enter inspector name" onchange="saveCurrentCase()">
                 </div>
             </div>
 
@@ -632,6 +901,11 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 12px;">
+                Created by Karen Vi'Nova
+            </div>
         </div>
     </div>
 
@@ -659,10 +933,11 @@
         function initializeApp() {
             cases = [{
                 id: 1000,
-                caseNumber: '',
                 clientName: '',
                 projectName: '',
+                projectNumber: '',
                 inspectionDate: new Date().toISOString().split('T')[0],
+                inspectionConductedBy: '',
                 defects: [],
                 defectCounter: 1
             }];
@@ -674,10 +949,11 @@
             const newCaseId = Math.max(...cases.map(c => c.id)) + 1;
             const newCase = {
                 id: newCaseId,
-                caseNumber: '',
                 clientName: '',
                 projectName: '',
+                projectNumber: '',
                 inspectionDate: new Date().toISOString().split('T')[0],
+                inspectionConductedBy: '',
                 defects: [],
                 defectCounter: 1
             };
@@ -700,10 +976,11 @@
             const currentCase = cases[index];
             
             // Load case data into form
-            document.getElementById('caseNumber').value = currentCase.caseNumber;
             document.getElementById('clientName').value = currentCase.clientName;
             document.getElementById('projectName').value = currentCase.projectName;
+            document.getElementById('projectNumber').value = currentCase.projectNumber;
             document.getElementById('inspectionDate').value = currentCase.inspectionDate;
+            document.getElementById('inspectionConductedBy').value = currentCase.inspectionConductedBy;
             
             // Load defects
             defects = [...currentCase.defects];
@@ -719,10 +996,11 @@
             if (cases.length === 0) return;
             
             const currentCase = cases[currentCaseIndex];
-            currentCase.caseNumber = document.getElementById('caseNumber').value;
             currentCase.clientName = document.getElementById('clientName').value;
             currentCase.projectName = document.getElementById('projectName').value;
+            currentCase.projectNumber = document.getElementById('projectNumber').value;
             currentCase.inspectionDate = document.getElementById('inspectionDate').value;
+            currentCase.inspectionConductedBy = document.getElementById('inspectionConductedBy').value;
             currentCase.defects = [...defects];
             currentCase.defectCounter = defectCounter;
             
@@ -744,7 +1022,7 @@
             const nextBtn = document.getElementById('nextCase');
             
             const currentCase = cases[currentCaseIndex];
-            const displayNumber = currentCase.caseNumber || `Case #${currentCase.id}`;
+            const displayNumber = `Case #${currentCase.id}`;
             
             caseNumberEl.textContent = displayNumber;
             caseCounterEl.textContent = `${currentCaseIndex + 1} of ${cases.length}`;
@@ -764,18 +1042,20 @@
             
             const matchingCases = cases.filter((caseItem, index) => {
                 return caseItem.clientName.toLowerCase().includes(searchTerm) ||
-                       caseItem.caseNumber.toLowerCase().includes(searchTerm) ||
-                       caseItem.projectName.toLowerCase().includes(searchTerm);
+                       caseItem.projectName.toLowerCase().includes(searchTerm) ||
+                       caseItem.projectNumber.toLowerCase().includes(searchTerm) ||
+                       `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
             });
             
             if (matchingCases.length > 0) {
                 resultsContainer.innerHTML = matchingCases.map(caseItem => {
                     const caseIndex = cases.findIndex(c => c.id === caseItem.id);
-                    const displayNumber = caseItem.caseNumber || `Case #${caseItem.id}`;
+                    const displayNumber = `Case #${caseItem.id}`;
                     return `
                         <div class="search-result-item" onclick="switchToCase(${caseIndex})">
                             <strong>${displayNumber}</strong><br>
                             <span style="color: #666;">${caseItem.clientName || 'No client'} - ${caseItem.projectName || 'No project'}</span><br>
+                            <span style="color: #666; font-size: 0.9em;">Project #: ${caseItem.projectNumber || 'N/A'}</span><br>
                             <small>${caseItem.defects.length} defects</small>
                         </div>
                     `;
