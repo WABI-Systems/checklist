@@ -858,7 +858,16 @@
                     </div>
                     <button onclick="clearSearch()" class="btn">Clear</button>
                 </div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <button onclick="showSavedCases()" class="btn btn-secondary" style="flex: 1;">
+                        View Saved Cases
+                    </button>
+                    <button onclick="deleteCurrentCase()" class="btn btn-danger" style="flex: 1;">
+                        Delete Case
+                    </button>
+                </div>
                 <div id="searchResults" class="search-results"></div>
+                <div id="savedCasesResults" class="search-results"></div>
             </div>
 
             <!-- Project Information -->
@@ -993,9 +1002,6 @@
                     <button onclick="saveCurrentCase()" class="btn">
                         Save
                     </button>
-                    <button onclick="exportToExcel()" class="btn btn-blue">
-                        Excel Export
-                    </button>
                     <button onclick="exportToPDF()" class="btn btn-blue">
                         PDF Export
                     </button>
@@ -1023,7 +1029,66 @@
         let defects = [];
         let defectCounter = 1;
 
-        // Initialize app when entering from landing page
+        // Data persistence functions
+        function saveCasesToStorage() {
+            try {
+                localStorage.setItem('defectTrackerCases', JSON.stringify(cases));
+                localStorage.setItem('defectTrackerCurrentIndex', currentCaseIndex.toString());
+            } catch (e) {
+                console.warn('Could not save to localStorage:', e);
+            }
+        }
+
+        function loadCasesFromStorage() {
+            try {
+                const savedCases = localStorage.getItem('defectTrackerCases');
+                const savedIndex = localStorage.getItem('defectTrackerCurrentIndex');
+                
+                if (savedCases) {
+                    const parsedCases = JSON.parse(savedCases);
+                    if (parsedCases && parsedCases.length > 0) {
+                        cases = parsedCases;
+                        currentCaseIndex = savedIndex ? parseInt(savedIndex) : 0;
+                        
+                        // Ensure currentCaseIndex is valid
+                        if (currentCaseIndex >= cases.length) {
+                            currentCaseIndex = cases.length - 1;
+                        }
+                        
+                        loadCase(currentCaseIndex);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load from localStorage:', e);
+            }
+            return false;
+        }
+
+        function deleteCaseFromStorage(caseId) {
+            try {
+                const savedCases = localStorage.getItem('defectTrackerCases');
+                if (savedCases) {
+                    let parsedCases = JSON.parse(savedCases);
+                    parsedCases = parsedCases.filter(c => c.id !== caseId);
+                    localStorage.setItem('defectTrackerCases', JSON.stringify(parsedCases));
+                }
+            } catch (e) {
+                console.warn('Could not delete from localStorage:', e);
+            }
+        }
+
+        function getAllSavedCases() {
+            try {
+                const savedCases = localStorage.getItem('defectTrackerCases');
+                if (savedCases) {
+                    return JSON.parse(savedCases);
+                }
+            } catch (e) {
+                console.warn('Could not load saved cases:', e);
+            }
+            return [];
+        }
         function enterApp() {
             document.getElementById('landingPage').classList.add('hidden');
             setTimeout(() => {
@@ -1080,6 +1145,7 @@
             if (newIndex >= 0 && newIndex < cases.length) {
                 currentCaseIndex = newIndex;
                 loadCase(currentCaseIndex);
+                saveCasesToStorage();
             }
         }
 
@@ -1111,7 +1177,10 @@
             currentCase.inspectionConductedBy = document.getElementById('inspectionConductedBy').value;
             currentCase.defects = [...defects];
             currentCase.defectCounter = defectCounter;
+            currentCase.lastSaved = new Date().toISOString();
             
+            // Save to localStorage
+            saveCasesToStorage();
             showSaveIndicator();
         }
 
