@@ -1,804 +1,1661 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Plus, ArrowLeft, ArrowRight, Search, Download, FileText, Grid3X3, Home, Trash2, Check, AlertCircle, Clock, User } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#84c441">
+    <meta name="msapplication-TileColor" content="#84c441">
+    <title>WABi & ESA Defect Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: rgba(132, 196, 65, 0.2);
+        }
 
-const DefectTrackerApp = () => {
-  const [showLanding, setShowLanding] = useState(true);
-  const [cases, setCases] = useState([]);
-  const [currentCaseIndex, setCurrentCaseIndex] = useState(0);
-  const [defects, setDefects] = useState([]);
-  const [defectCounter, setDefectCounter] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearch, setShowSearch] = useState(false);
-  const [saveIndicator, setSaveIndicator] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [showFinishModal, setShowFinishModal] = useState(false);
-  
-  const fileInputRef = useRef(null);
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            min-height: 100vh;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
 
-  // Form states
-  const [formData, setFormData] = useState({
-    clientName: '',
-    projectName: '',
-    projectNumber: '',
-    inspectionDate: new Date().toISOString().split('T')[0],
-    inspectionConductedBy: '',
-    defectDescription: '',
-    defectPriority: 'medium',
-    defectStatus: 'unassigned',
-    assignedTo: '',
-    actionItems: '',
-    defectComments: ''
-  });
+        /* Landing Page Styles */
+        .landing-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
 
-  // Initialize app
-  useEffect(() => {
-    if (!showLanding && cases.length === 0) {
-      initializeApp();
-    }
-  }, [showLanding]);
+        .landing-page.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
 
-  const initializeApp = () => {
-    const initialCase = {
-      id: 1000,
-      clientName: '',
-      projectName: '',
-      projectNumber: '',
-      inspectionDate: new Date().toISOString().split('T')[0],
-      inspectionConductedBy: '',
-      defects: [],
-      defectCounter: 1
-    };
-    setCases([initialCase]);
-    setCurrentCaseIndex(0);
-    loadCase(0, [initialCase]);
-  };
+        .landing-content {
+            text-align: center;
+            color: white;
+            max-width: 600px;
+            padding: 40px 20px;
+        }
 
-  const loadCase = (index, casesArray = cases) => {
-    const currentCase = casesArray[index];
-    setFormData({
-      ...formData,
-      clientName: currentCase.clientName,
-      projectName: currentCase.projectName,
-      projectNumber: currentCase.projectNumber,
-      inspectionDate: currentCase.inspectionDate,
-      inspectionConductedBy: currentCase.inspectionConductedBy
-    });
-    setDefects([...currentCase.defects]);
-    setDefectCounter(currentCase.defectCounter);
-  };
+        .landing-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
 
-  const saveCurrentCase = () => {
-    if (cases.length === 0) return;
-    
-    const updatedCases = [...cases];
-    const currentCase = updatedCases[currentCaseIndex];
-    currentCase.clientName = formData.clientName;
-    currentCase.projectName = formData.projectName;
-    currentCase.projectNumber = formData.projectNumber;
-    currentCase.inspectionDate = formData.inspectionDate;
-    currentCase.inspectionConductedBy = formData.inspectionConductedBy;
-    currentCase.defects = [...defects];
-    currentCase.defectCounter = defectCounter;
-    
-    setCases(updatedCases);
-    showSaveIndicator();
-  };
+        .landing-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #68d391, #38a169);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
 
-  const showSaveIndicator = () => {
-    setSaveIndicator(true);
-    setTimeout(() => setSaveIndicator(false), 2000);
-  };
+        .landing-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
 
-  const createNewCase = () => {
-    saveCurrentCase();
-    const newCaseId = Math.max(...cases.map(c => c.id)) + 1;
-    const newCase = {
-      id: newCaseId,
-      clientName: '',
-      projectName: '',
-      projectNumber: '',
-      inspectionDate: new Date().toISOString().split('T')[0],
-      inspectionConductedBy: '',
-      defects: [],
-      defectCounter: 1
-    };
-    const updatedCases = [...cases, newCase];
-    setCases(updatedCases);
-    setCurrentCaseIndex(updatedCases.length - 1);
-    loadCase(updatedCases.length - 1, updatedCases);
-    showSaveIndicator();
-  };
+        .landing-button {
+            background: linear-gradient(45deg, #84C441, #9fd356);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
 
-  const navigateCase = (direction) => {
-    saveCurrentCase();
-    const newIndex = currentCaseIndex + direction;
-    if (newIndex >= 0 && newIndex < cases.length) {
-      setCurrentCaseIndex(newIndex);
-      loadCase(newIndex);
-    }
-  };
+        .landing-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-  };
+        .landing-powered {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 20px;
+        }
 
-  const handlePhotoCapture = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedPhoto(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
 
-  const removePhoto = () => {
-    setSelectedPhoto(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+        /* Main App Styles */
+        .main-app {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            min-height: 100vh;
+        }
 
-  const addDefect = () => {
-    if (!formData.defectDescription.trim()) {
-      alert('Please enter a description for the defect.');
-      return;
-    }
+        .main-app.visible {
+            opacity: 1;
+            visibility: visible;
+        }
 
-    const newDefect = {
-      id: defectCounter,
-      description: formData.defectDescription,
-      priority: formData.defectPriority,
-      assignedTo: formData.assignedTo,
-      actionItems: formData.actionItems,
-      comments: formData.defectComments,
-      status: formData.defectStatus,
-      dateAdded: new Date().toLocaleDateString(),
-      photo: selectedPhoto
-    };
+        .header {
+            background: linear-gradient(45deg, #84C441, #9fd356);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-    setDefects([...defects, newDefect]);
-    setDefectCounter(defectCounter + 1);
-    
-    // Clear form
-    setFormData({
-      ...formData,
-      defectDescription: '',
-      defectPriority: 'medium',
-      defectStatus: 'unassigned',
-      assignedTo: '',
-      actionItems: '',
-      defectComments: ''
-    });
-    setSelectedPhoto(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    
-    saveCurrentCase();
-  };
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-  const updateDefectStatus = (id, newStatus) => {
-    const updatedDefects = defects.map(d => 
-      d.id === id ? { ...d, status: newStatus } : d
-    );
-    setDefects(updatedDefects);
-    saveCurrentCase();
-  };
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
 
-  const deleteDefect = (id) => {
-    if (window.confirm('Are you sure you want to delete this defect?')) {
-      setDefects(defects.filter(d => d.id !== id));
-      saveCurrentCase();
-    }
-  };
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
 
-  const performSearch = (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowSearch(false);
-      return;
-    }
+        .header-title {
+            text-align: center;
+        }
 
-    const matchingCases = cases.filter((caseItem, index) => {
-      const searchTerm = query.toLowerCase();
-      return caseItem.clientName.toLowerCase().includes(searchTerm) ||
-             caseItem.projectName.toLowerCase().includes(searchTerm) ||
-             caseItem.projectNumber.toLowerCase().includes(searchTerm) ||
-             `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
-    });
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: #374151;
+        }
 
-    setSearchResults(matchingCases);
-    setShowSearch(true);
-  };
+        .header-title p {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            color: #374151;
+        }
 
-  const switchToCase = (caseId) => {
-    saveCurrentCase();
-    const index = cases.findIndex(c => c.id === caseId);
-    if (index !== -1) {
-      setCurrentCaseIndex(index);
-      loadCase(index);
-    }
-    setSearchQuery('');
-    setShowSearch(false);
-  };
+        .content {
+            padding: 1rem;
+            padding-bottom: 8rem;
+        }
 
-  const getStats = () => {
-    const total = defects.length;
-    const open = defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length;
-    const fixed = defects.filter(d => d.status === 'fixed').length;
-    const verified = defects.filter(d => d.status === 'verified').length;
-    return { total, open, fixed, verified };
-  };
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case 'high': return '🔴';
-      case 'medium': return '🟡';
-      case 'low': return '🟢';
-      default: return '⚪';
-    }
-  };
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #84C441;
+            margin-bottom: 1rem;
+        }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'unassigned': return '⚪';
-      case 'assigned': return '🟡';
-      case 'in-progress': return '🔵';
-      case 'fixed': return '🔧';
-      case 'verified': return '✅';
-      default: return '⚪';
-    }
-  };
+        .form-group {
+            margin-bottom: 1rem;
+        }
 
-  const generateReport = () => {
-    if (defects.length === 0) {
-      alert('No defects to include in the report!');
-      return;
-    }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
 
-    const currentCase = cases[currentCaseIndex];
-    const stats = getStats();
-    
-    const reportData = {
-      caseInfo: {
-        id: currentCase.id,
-        clientName: currentCase.clientName || 'N/A',
-        projectName: currentCase.projectName || 'N/A',
-        projectNumber: currentCase.projectNumber || 'N/A',
-        inspectionDate: currentCase.inspectionDate || 'N/A',
-        inspectionConductedBy: currentCase.inspectionConductedBy || 'N/A',
-        reportGenerated: new Date().toLocaleDateString()
-      },
-      stats,
-      defects: defects.map(d => ({
-        ...d,
-        priorityIcon: getPriorityIcon(d.priority),
-        statusIcon: getStatusIcon(d.status)
-      }))
-    };
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
 
-    // Create downloadable JSON report
-    const dataStr = JSON.stringify(reportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Defect_Report_Case_${currentCase.id}_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
-    alert('Report downloaded successfully! This JSON file contains all case data and can be imported into other systems.');
-  };
+        .form-input:focus {
+            outline: none;
+            border-color: #84C441;
+        }
 
-  const currentCase = cases[currentCaseIndex];
-  const stats = getStats();
+        .btn {
+            background: #84C441;
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
 
-  if (showLanding) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center p-4">
-        <div className="text-center text-white max-w-md">
-          <div className="text-6xl mb-6 animate-bounce">🔍</div>
-          <h1 className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">
-            WABi & ESA<br/>Defect Tracker
-          </h1>
-          <p className="text-xl mb-6 opacity-90">
-            WABi & ESA Quality Control & Defect Management
-          </p>
-          <button
-            onClick={() => setShowLanding(false)}
-            className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            Start Inspection
-          </button>
-          <div className="mt-6 text-sm opacity-70">
-            Powered by Kaza 🌈
-          </div>
+        .btn:hover {
+            background: #6ba235;
+            transform: translateY(-1px);
+        }
 
-        </div>
-      </div>
-    );
-  }
+        .btn-secondary {
+            background: #6b7280;
+        }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-700 to-gray-900">
-      {/* Save Indicator */}
-      {saveIndicator && (
-        <div className="fixed top-4 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg font-semibold text-center z-50 shadow-lg">
-          ✓ Saved
-        </div>
-      )}
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 shadow-lg">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowLanding(true)}
-            className="p-2 rounded-lg bg-white/20 backdrop-blur-sm"
-          >
-            <Home size={20} />
-          </button>
-          <div className="text-center">
-            <h1 className="text-xl font-bold">🔍 Defect Tracker</h1>
-            <p className="text-sm opacity-90">Quality Control & Defect Management</p>
-          </div>
-          <button
-            onClick={generateReport}
-            className="p-2 rounded-lg bg-white/20 backdrop-blur-sm"
-          >
-            <Download size={20} />
-          </button>
-        </div>
-      </div>
+        .btn-danger {
+            background: #dc2626;
+        }
 
-      <div className="p-4 space-y-4">
-        {/* Case Navigation */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={createNewCase}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
-            >
-              <Plus size={16} />
-              New Case
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-blue {
+            background: #3b82f6;
+        }
+
+        .btn-blue:hover {
+            background: #2563eb;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-number.green { color: #84C441; }
+        .stat-number.orange { color: #f56500; }
+        .stat-number.blue { color: #3b82f6; }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .case-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .case-nav-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .case-nav-btn:hover:not(:disabled) {
+            background: #4b5563;
+        }
+
+        .case-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .case-info {
+            text-align: center;
+        }
+
+        .case-number {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+
+        .case-counter {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .search-results {
+            margin-top: 0.75rem;
+            display: none;
+        }
+
+        .search-results.visible {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 0.75rem;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #84C441;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #f3f4f6;
+            transform: translateX(2px);
+        }
+
+        .defect-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background: #f9fafb;
+            margin-bottom: 1rem;
+        }
+
+        .defect-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .defect-number {
+            background: #84C441;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .defect-info {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .defect-info strong {
+            font-weight: 600;
+        }
+
+        .defect-photo {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 0.5rem;
+            border: 2px solid #e5e7eb;
+            margin: 0.75rem 0;
+        }
+
+        .defect-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .defect-actions select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .file-input-container {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .photo-preview-container {
+            margin-top: 0.75rem;
+        }
+
+        .photo-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 0.5rem;
+            border: 2px solid #e5e7eb;
+        }
+
+        .remove-photo-btn {
+            margin-top: 0.5rem;
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .save-indicator {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            background: #84C441;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 -4px 6px rgba(0,0,0,0.1);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 768px;
+            margin: 0 auto;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #84C441;
+            margin-bottom: 1rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        @media (max-width: 640px) {
+            body {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+            
+            .landing-title {
+                font-size: 2rem;
+            }
+            
+            .landing-subtitle {
+                font-size: 1rem;
+            }
+            
+            .landing-button {
+                padding: 18px 30px;
+                font-size: 1rem;
+                width: 90%;
+                max-width: 300px;
+            }
+            
+            .header {
+                padding: 0.75rem;
+            }
+            
+            .header-title h1 {
+                font-size: 1.1rem;
+            }
+            
+            .header-title p {
+                font-size: 0.8rem;
+            }
+            
+            .content {
+                padding: 0.75rem;
+                padding-bottom: 10rem;
+            }
+            
+            .card {
+                padding: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .form-input, .btn {
+                font-size: 16px; /* Prevent zoom on iOS */
+                padding: 0.875rem;
+                border-radius: 8px;
+            }
+            
+            .case-nav {
+                flex-direction: column;
+                gap: 0.75rem;
+                text-align: center;
+            }
+            
+            .case-nav > div {
+                width: 100%;
+            }
+            
+            .case-nav > div:first-child,
+            .case-nav > div:last-child {
+                display: flex;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .case-nav-btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+                min-width: 80px;
+            }
+            
+            .search-container {
+                margin-bottom: 0.75rem;
+            }
+            
+            .search-input {
+                padding: 0.875rem 0.875rem 0.875rem 2.75rem;
+                font-size: 16px;
+            }
+            
+            .defect-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            
+            .defect-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .defect-actions select {
+                padding: 0.875rem;
+                font-size: 16px;
+            }
+            
+            .footer {
+                padding: 0.75rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .footer-buttons {
+                width: 100%;
+                justify-content: stretch;
+            }
+            
+            .footer-buttons .btn {
+                flex: 1;
+                min-height: 48px;
+            }
+            
+            .modal-content {
+                margin: 1rem;
+                padding: 1rem;
+            }
+            
+            .stat-card {
+                padding: 0.75rem;
+            }
+            
+            .stat-number {
+                font-size: 1.25rem;
+            }
+            
+            .defect-photo {
+                max-height: 150px;
+            }
+            
+            /* Improve touch targets */
+            .btn, .case-nav-btn, .header-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Better text sizes for mobile */
+            .card-title {
+                font-size: 1rem;
+            }
+            
+            .form-label {
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .defect-info {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 0.5rem;
+                padding-bottom: 12rem;
+            }
+            
+            .card {
+                padding: 0.5rem;
+            }
+            
+            .grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .landing-title {
+                font-size: 1.75rem;
+            }
+            
+            .case-number {
+                font-size: 1rem;
+            }
+        }
+
+        /* Landscape orientation adjustments */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .landing-content {
+                padding: 20px;
+            }
+            
+            .landing-title {
+                font-size: 1.5rem;
+                margin-bottom: 10px;
+            }
+            
+            .landing-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 15px;
+            }
+            
+            .landing-button {
+                padding: 12px 25px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landingPage" class="landing-page">
+        <div class="landing-content">
+            <div class="landing-logo">🔍</div>
+            <h1 class="landing-title">
+                WABi & ESA<br/>Defect Tracker
+            </h1>
+            <p class="landing-subtitle">
+                WABi & ESA Quality Control & Defect Management
+            </p>
+            <button class="landing-button" onclick="enterApp()">
+                Start Inspection
             </button>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-800">
-                Case #{currentCase?.id || 1000}
-              </div>
-              <div className="text-sm text-gray-600">
-                {currentCaseIndex + 1} of {cases.length}
-              </div>
+            <div class="landing-powered">
+                Powered by Kaza 🌈
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigateCase(-1)}
-                disabled={currentCaseIndex === 0}
-                className="p-2 rounded-lg bg-gray-200 disabled:opacity-50"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <button
-                onClick={() => navigateCase(1)}
-                disabled={currentCaseIndex === cases.length - 1}
-                className="p-2 rounded-lg bg-gray-200 disabled:opacity-50"
-              >
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
         </div>
-
-        {/* Search */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search cases..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  performSearch(e.target.value);
-                }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setShowSearch(false);
-              }}
-              className="bg-green-500 text-white px-4 py-3 rounded-lg"
-            >
-              Clear
-            </button>
-          </div>
-          {showSearch && (
-            <div className="space-y-2">
-              {searchResults.map((caseItem) => (
-                <div
-                  key={caseItem.id}
-                  onClick={() => switchToCase(caseItem.id)}
-                  className="p-3 bg-gray-50 rounded-lg border-l-4 border-green-500 cursor-pointer hover:bg-gray-100"
-                >
-                  <div className="font-semibold">Case #{caseItem.id}</div>
-                  <div className="text-sm text-gray-600">
-                    {caseItem.clientName || 'No client'} - {caseItem.projectName || 'No project'}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {caseItem.defects.length} defects
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Project Information */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <h2 className="text-lg font-bold text-green-600 mb-4">Project Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Client Name</label>
-              <input
-                type="text"
-                value={formData.clientName}
-                onChange={(e) => handleInputChange('clientName', e.target.value)}
-                onBlur={saveCurrentCase}
-                placeholder="Enter client name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Project Name</label>
-              <input
-                type="text"
-                value={formData.projectName}
-                onChange={(e) => handleInputChange('projectName', e.target.value)}
-                onBlur={saveCurrentCase}
-                placeholder="Enter project name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Project Number</label>
-                <input
-                  type="text"
-                  value={formData.projectNumber}
-                  onChange={(e) => handleInputChange('projectNumber', e.target.value)}
-                  onBlur={saveCurrentCase}
-                  placeholder="Project #"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Inspection Date</label>
-                <input
-                  type="date"
-                  value={formData.inspectionDate}
-                  onChange={(e) => handleInputChange('inspectionDate', e.target.value)}
-                  onBlur={saveCurrentCase}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Inspection Conducted By</label>
-              <input
-                type="text"
-                value={formData.inspectionConductedBy}
-                onChange={(e) => handleInputChange('inspectionConductedBy', e.target.value)}
-                onBlur={saveCurrentCase}
-                placeholder="Enter inspector name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics */}
-        <div className="grid grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
-            <div className="text-2xl font-bold text-green-600">{stats.total}</div>
-            <div className="text-xs text-gray-600">Total</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
-            <div className="text-2xl font-bold text-orange-600">{stats.open}</div>
-            <div className="text-xs text-gray-600">Open</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
-            <div className="text-2xl font-bold text-blue-600">{stats.fixed}</div>
-            <div className="text-xs text-gray-600">Fixed</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg">
-            <div className="text-2xl font-bold text-green-600">{stats.verified}</div>
-            <div className="text-xs text-gray-600">Verified</div>
-          </div>
-        </div>
-
-        {/* Add New Defect */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <h2 className="text-lg font-bold text-green-600 mb-4">Add New Defect</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-              <textarea
-                value={formData.defectDescription}
-                onChange={(e) => handleInputChange('defectDescription', e.target.value)}
-                placeholder="Describe the defect..."
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
-                <select
-                  value={formData.defectPriority}
-                  onChange={(e) => handleInputChange('defectPriority', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                <select
-                  value={formData.defectStatus}
-                  onChange={(e) => handleInputChange('defectStatus', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="unassigned">Unassigned</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="fixed">Fixed</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Assigned To</label>
-              <input
-                type="text"
-                value={formData.assignedTo}
-                onChange={(e) => handleInputChange('assignedTo', e.target.value)}
-                placeholder="Enter name or team"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Action Items</label>
-              <textarea
-                value={formData.actionItems}
-                onChange={(e) => handleInputChange('actionItems', e.target.value)}
-                placeholder="List specific actions needed..."
-                rows={2}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Comments/Notes</label>
-              <textarea
-                value={formData.defectComments}
-                onChange={(e) => handleInputChange('defectComments', e.target.value)}
-                placeholder="Additional comments..."
-                rows={2}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Photo</label>
-              <div className="relative">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoCapture}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-green-500 text-white p-4 rounded-lg flex items-center justify-center gap-2 font-semibold"
-                >
-                  <Camera size={20} />
-                  Take/Upload Photo
-                </button>
-              </div>
-              {selectedPhoto && (
-                <div className="mt-3">
-                  <img
-                    src={selectedPhoto}
-                    alt="Preview"
-                    className="w-full max-w-xs rounded-lg border-2 border-gray-300"
-                  />
-                  <button
-                    onClick={removePhoto}
-                    className="mt-2 bg-red-500 text-white px-3 py-1 rounded text-sm"
-                  >
-                    Remove Photo
-                  </button>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={addDefect}
-              className="w-full bg-green-600 text-white p-4 rounded-lg font-semibold flex items-center justify-center gap-2"
-            >
-              <Plus size={20} />
-              Add Defect
-            </button>
-          </div>
-        </div>
-
-        {/* Defects List */}
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <h2 className="text-lg font-bold text-green-600 mb-4">Defects List</h2>
-          {defects.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Grid3X3 size={48} className="mx-auto mb-4 opacity-50" />
-              <h3 className="font-semibold mb-2">No defects recorded yet</h3>
-              <p>Add your first defect using the form above</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {defects.map((defect) => (
-                <div key={defect.id} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        #{defect.id}
-                      </span>
-                      <span className="text-lg">
-                        {getPriorityIcon(defect.priority)}
-                      </span>
-                      <span className="text-xs font-semibold text-gray-600">
-                        {defect.priority.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">
-                        {getStatusIcon(defect.status)}
-                      </span>
-                      <span className="text-xs font-semibold text-gray-600">
-                        {defect.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-semibold">Description:</span> {defect.description}
-                    </div>
-                    {defect.assignedTo && (
-                      <div>
-                        <span className="font-semibold">Assigned To:</span> {defect.assignedTo}
-                      </div>
-                    )}
-                    {defect.actionItems && (
-                      <div>
-                        <span className="font-semibold">Action Items:</span> {defect.actionItems}
-                      </div>
-                    )}
-                    {defect.comments && (
-                      <div>
-                        <span className="font-semibold">Comments:</span> {defect.comments}
-                      </div>
-                    )}
-                    <div className="text-gray-500">
-                      <span className="font-semibold">Date Added:</span> {defect.dateAdded}
-                    </div>
-                  </div>
-
-                  {defect.photo && (
-                    <div className="mt-3">
-                      <img
-                        src={defect.photo}
-                        alt="Defect"
-                        className="w-full max-w-xs rounded-lg border-2 border-gray-300"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 mt-4">
-                    <select
-                      value={defect.status}
-                      onChange={(e) => updateDefectStatus(defect.id, e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded text-sm"
-                    >
-                      <option value="unassigned">Unassigned</option>
-                      <option value="assigned">Assigned</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="fixed">Fixed</option>
-                      <option value="verified">Verified</option>
-                    </select>
-                    <button
-                      onClick={() => deleteDefect(defect.id)}
-                      className="bg-red-500 text-white p-2 rounded"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="bg-white rounded-xl p-4 shadow-lg text-center">
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => setShowLanding(true)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Home size={16} />
-              Return to Home
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={saveCurrentCase}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <Check size={16} />
-                Save
-              </button>
-              <button
-                onClick={generateReport}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <Download size={16} />
-                Export Data
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Finish Modal */}
-        {showFinishModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold text-green-600 mb-4">📧 Finish Case & Export</h3>
-              <p className="text-gray-700 mb-4">
-                This will generate a comprehensive report with all photos and data for case #{currentCase?.id}.
-              </p>
-              <p className="text-gray-700 mb-6">
-                The report will be downloaded as a JSON file that can be shared or imported into other systems.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowFinishModal(false);
-                    generateReport();
-                  }}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold"
-                >
-                  📧 Generate Report
-                </button>
-                <button
-                  onClick={() => setShowFinishModal(false)}
-                  className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add spacing at bottom for mobile */}
-        <div className="h-20"></div>
-      </div>
     </div>
-  );
-};
 
-export default DefectTrackerApp;
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app">
+        <!-- Save Indicator -->
+        <div id="saveIndicator" class="save-indicator">Saved</div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title" style="width: 100%;">
+                    <h1>Defect Tracker</h1>
+                    <p>Quality Control & Defect Management</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Case Navigation -->
+            <div class="card">
+                <div class="case-nav">
+                    <button onclick="createNewCase()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.875rem;">
+                        + New Case
+                    </button>
+                    <div class="case-info">
+                        <div class="case-number" id="currentCaseNumber">Case #1000</div>
+                        <div class="case-counter" id="caseCounter">1 of 1</div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="prevCase" class="case-nav-btn" onclick="navigateCase(-1)">← Prev</button>
+                        <button id="nextCase" class="case-nav-btn" onclick="navigateCase(1)">Next →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="card">
+                <h3 class="card-title">Search Cases</h3>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div class="search-container" style="flex: 1;">
+                        <span class="search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input"
+                            placeholder="Search cases..." 
+                            oninput="performSearch()"
+                        >
+                    </div>
+                    <button onclick="clearSearch()" class="btn">Clear</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            <!-- Project Information -->
+            <div class="card">
+                <h2 class="card-title">Project Information</h2>
+                <div class="form-group">
+                    <label class="form-label">Client Name</label>
+                    <input type="text" id="clientName" class="form-input" placeholder="Enter client name" onchange="saveCurrentCase()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" id="projectName" class="form-input" placeholder="Enter project name" onchange="saveCurrentCase()">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Project Number</label>
+                        <input type="text" id="projectNumber" class="form-input" placeholder="Project #" onchange="saveCurrentCase()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Inspection Date</label>
+                        <input type="date" id="inspectionDate" class="form-input" onchange="saveCurrentCase()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Inspection Conducted By</label>
+                    <input type="text" id="inspectionConductedBy" class="form-input" placeholder="Enter inspector name" onchange="saveCurrentCase()">
+                </div>
+            </div>
+
+            <!-- Add New Defect -->
+            <div class="card">
+                <h2 class="card-title">Add New Defect</h2>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="defectDescription" class="form-input" rows="3" placeholder="Describe the defect..."></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select id="defectPriority" class="form-input">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="defectStatus" class="form-input">
+                            <option value="unassigned" selected>Unassigned</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="fixed">Fixed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Assigned To</label>
+                        <input type="text" id="assignedTo" class="form-input" placeholder="Enter name or team">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Repair Cost $</label>
+                        <input type="number" id="repairCost" class="form-input" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Action Items</label>
+                    <textarea id="actionItems" class="form-input" rows="2" placeholder="List specific actions needed..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comments/Notes</label>
+                    <textarea id="defectComments" class="form-input" rows="2" placeholder="Additional comments..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Photo</label>
+                    <div class="file-input-container">
+                        <input type="file" id="defectPhoto" class="file-input" accept="image/*" capture="environment" onchange="previewImage(this)">
+                        <button type="button" class="btn" style="width: 100%;">
+                            Take/Upload Photo
+                        </button>
+                    </div>
+                    <div id="imagePreview" class="photo-preview-container" style="display: none;">
+                        <img id="previewImg" class="photo-preview" alt="Photo preview">
+                        <button type="button" class="remove-photo-btn" onclick="removeImage()">Remove Photo</button>
+                    </div>
+                </div>
+                <button onclick="addDefect()" class="btn" style="width: 100%; margin-top: 1rem;">
+                    + Add Defect
+                </button>
+            </div>
+
+            <!-- Defects List -->
+            <div class="card">
+                <h2 class="card-title">Defects List</h2>
+                <div id="defectsList">
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>No defects recorded yet</h3>
+                        <p>Add your first defect using the form above</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-number green" id="totalDefects">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number orange" id="openDefects">0</div>
+                    <div class="stat-label">Open</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number blue" id="fixedDefects">0</div>
+                    <div class="stat-label">Fixed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number green" id="verifiedDefects">0</div>
+                    <div class="stat-label">Verified</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <button onclick="returnToHome()" class="btn btn-secondary">
+                    Return to Home
+                </button>
+                <div class="footer-buttons">
+                    <button onclick="saveCurrentCase()" class="btn">
+                        Save
+                    </button>
+                    <button onclick="exportToExcel()" class="btn btn-blue">
+                        Excel Export
+                    </button>
+                    <button onclick="exportToPDF()" class="btn btn-blue">
+                        PDF Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="finishModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Finish Case & Export</h3>
+            <p>This will generate a comprehensive report with all photos and data.</p>
+            <p style="margin-top: 0.5rem;">The report will be downloaded as a JSON file that can be shared or imported into other systems.</p>
+            <div class="modal-buttons">
+                <button onclick="proceedWithFinish()" class="btn">Generate Report</button>
+                <button onclick="closeFinishModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cases = [];
+        let currentCaseIndex = 0;
+        let defects = [];
+        let defectCounter = 1;
+
+        // Initialize app when entering from landing page
+        function enterApp() {
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('mainApp').classList.add('visible');
+                document.getElementById('landingPage').style.display = 'none';
+                initializeApp();
+            }, 500);
+        }
+
+        function returnToHome() {
+            document.getElementById('mainApp').classList.remove('visible');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'flex';
+                document.getElementById('landingPage').classList.remove('hidden');
+            }, 500);
+        }
+
+        function initializeApp() {
+            cases = [{
+                id: 1000,
+                clientName: '',
+                projectName: '',
+                projectNumber: '',
+                inspectionDate: new Date().toISOString().split('T')[0],
+                inspectionConductedBy: '',
+                defects: [],
+                defectCounter: 1
+            }];
+            loadCase(0);
+        }
+
+        function createNewCase() {
+            saveCurrentCase();
+            const newCaseId = Math.max(...cases.map(c => c.id)) + 1;
+            const newCase = {
+                id: newCaseId,
+                clientName: '',
+                projectName: '',
+                projectNumber: '',
+                inspectionDate: new Date().toISOString().split('T')[0],
+                inspectionConductedBy: '',
+                defects: [],
+                defectCounter: 1
+            };
+            cases.push(newCase);
+            currentCaseIndex = cases.length - 1;
+            loadCase(currentCaseIndex);
+            showSaveIndicator();
+        }
+
+        function navigateCase(direction) {
+            saveCurrentCase();
+            const newIndex = currentCaseIndex + direction;
+            if (newIndex >= 0 && newIndex < cases.length) {
+                currentCaseIndex = newIndex;
+                loadCase(currentCaseIndex);
+            }
+        }
+
+        function loadCase(index) {
+            const currentCase = cases[index];
+            
+            document.getElementById('clientName').value = currentCase.clientName;
+            document.getElementById('projectName').value = currentCase.projectName;
+            document.getElementById('projectNumber').value = currentCase.projectNumber;
+            document.getElementById('inspectionDate').value = currentCase.inspectionDate;
+            document.getElementById('inspectionConductedBy').value = currentCase.inspectionConductedBy;
+            
+            defects = [...currentCase.defects];
+            defectCounter = currentCase.defectCounter;
+            
+            updateCaseNavigation();
+            renderDefects();
+            updateStats();
+        }
+
+        function saveCurrentCase() {
+            if (cases.length === 0) return;
+            
+            const currentCase = cases[currentCaseIndex];
+            currentCase.clientName = document.getElementById('clientName').value;
+            currentCase.projectName = document.getElementById('projectName').value;
+            currentCase.projectNumber = document.getElementById('projectNumber').value;
+            currentCase.inspectionDate = document.getElementById('inspectionDate').value;
+            currentCase.inspectionConductedBy = document.getElementById('inspectionConductedBy').value;
+            currentCase.defects = [...defects];
+            currentCase.defectCounter = defectCounter;
+            
+            showSaveIndicator();
+        }
+
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        function updateCaseNavigation() {
+            const caseNumberEl = document.getElementById('currentCaseNumber');
+            const caseCounterEl = document.getElementById('caseCounter');
+            const prevBtn = document.getElementById('prevCase');
+            const nextBtn = document.getElementById('nextCase');
+            
+            const currentCase = cases[currentCaseIndex];
+            caseNumberEl.textContent = `Case #${currentCase.id}`;
+            caseCounterEl.textContent = `${currentCaseIndex + 1} of ${cases.length}`;
+            
+            prevBtn.disabled = currentCaseIndex === 0;
+            nextBtn.disabled = currentCaseIndex === cases.length - 1;
+        }
+
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!searchTerm.trim()) {
+                resultsContainer.classList.remove('visible');
+                return;
+            }
+            
+            const matchingCases = cases.filter((caseItem, index) => {
+                return caseItem.clientName.toLowerCase().includes(searchTerm) ||
+                       caseItem.projectName.toLowerCase().includes(searchTerm) ||
+                       caseItem.projectNumber.toLowerCase().includes(searchTerm) ||
+                       `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
+            });
+            
+            if (matchingCases.length > 0) {
+                resultsContainer.innerHTML = matchingCases.map(caseItem => {
+                    const caseIndex = cases.findIndex(c => c.id === caseItem.id);
+                    return `
+                        <div class="search-result-item" onclick="switchToCase(${caseIndex})">
+                            <strong>Case #${caseItem.id}</strong><br>
+                            <span style="color: #666;">${caseItem.clientName || 'No client'} - ${caseItem.projectName || 'No project'}</span><br>
+                            <small>${caseItem.defects.length} defects</small>
+                        </div>
+                    `;
+                }).join('');
+                resultsContainer.classList.add('visible');
+            } else {
+                resultsContainer.innerHTML = '<div style="text-align: center; color: #666;">No cases found</div>';
+                resultsContainer.classList.add('visible');
+            }
+        }
+
+        function switchToCase(index) {
+            saveCurrentCase();
+            currentCaseIndex = index;
+            loadCase(currentCaseIndex);
+            clearSearch();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').classList.remove('visible');
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Create a canvas to resize the image
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Calculate new dimensions (max 400px width, maintain aspect ratio)
+                        const maxWidth = 400;
+                        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+                        canvas.width = img.width * ratio;
+                        canvas.height = img.height * ratio;
+                        
+                        // Draw resized image
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Convert to base64 with reduced quality
+                        const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        // Update preview
+                        document.getElementById('previewImg').src = resizedImage;
+                        document.getElementById('imagePreview').style.display = 'block';
+                        
+                        // Store the resized image for adding to defect
+                        input.dataset.resizedImage = resizedImage;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImage() {
+            document.getElementById('imagePreview').style.display = 'none';
+            const photoInput = document.getElementById('defectPhoto');
+            photoInput.value = '';
+            delete photoInput.dataset.resizedImage;
+        }
+
+        function addDefect() {
+            const description = document.getElementById('defectDescription').value;
+            const priority = document.getElementById('defectPriority').value;
+            const status = document.getElementById('defectStatus').value;
+            const assignedTo = document.getElementById('assignedTo').value;
+            const repairCost = document.getElementById('repairCost').value;
+            const actionItems = document.getElementById('actionItems').value;
+            const comments = document.getElementById('defectComments').value;
+            const photoInput = document.getElementById('defectPhoto');
+
+            if (!description.trim()) {
+                alert('Please enter a description for the defect.');
+                return;
+            }
+
+            const defect = {
+                id: defectCounter++,
+                description: description,
+                priority: priority,
+                status: status,
+                assignedTo: assignedTo,
+                repairCost: repairCost ? parseFloat(repairCost) : 0,
+                actionItems: actionItems,
+                comments: comments,
+                dateAdded: new Date().toLocaleDateString(),
+                photo: photoInput.dataset.resizedImage || null
+            };
+
+            defects.push(defect);
+            renderDefects();
+            updateStats();
+            clearForm();
+            saveCurrentCase();
+        }
+
+        function clearForm() {
+            document.getElementById('defectDescription').value = '';
+            document.getElementById('defectPriority').value = 'medium';
+            document.getElementById('defectStatus').value = 'unassigned';
+            document.getElementById('assignedTo').value = '';
+            document.getElementById('repairCost').value = '';
+            document.getElementById('actionItems').value = '';
+            document.getElementById('defectComments').value = '';
+            const photoInput = document.getElementById('defectPhoto');
+            photoInput.value = '';
+            delete photoInput.dataset.resizedImage;
+            removeImage();
+        }
+
+        function renderDefects() {
+            const defectsList = document.getElementById('defectsList');
+            
+            if (defects.length === 0) {
+                defectsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>No defects recorded yet</h3>
+                        <p>Add your first defect using the form above</p>
+                    </div>
+                `;
+                return;
+            }
+
+            defectsList.innerHTML = defects.map(defect => `
+                <div class="defect-item">
+                    <div class="defect-header">
+                        <div>
+                            <span class="defect-number">#${defect.id}</span>
+                            <span style="margin-left: 0.5rem; font-size: 1.2rem;">
+                                ${getPriorityIcon(defect.priority)}
+                            </span>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: #666; margin-left: 0.25rem;">
+                                ${defect.priority.toUpperCase()}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="font-size: 1.2rem; margin-right: 0.25rem;">
+                                ${getStatusIcon(defect.status)}
+                            </span>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: #666;">
+                                ${defect.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="defect-info">
+                        <strong>Description:</strong> ${defect.description}
+                    </div>
+                    ${defect.assignedTo ? `
+                        <div class="defect-info">
+                            <strong>Assigned To:</strong> ${defect.assignedTo}
+                        </div>
+                    ` : ''}
+                    ${defect.repairCost > 0 ? `
+                        <div class="defect-info">
+                            <strong>Repair Cost:</strong> ${defect.repairCost.toFixed(2)}
+                        </div>
+                    ` : ''}
+                    ${defect.actionItems ? `
+                        <div class="defect-info">
+                            <strong>Action Items:</strong> ${defect.actionItems}
+                        </div>
+                    ` : ''}
+                    ${defect.comments ? `
+                        <div class="defect-info">
+                            <strong>Comments:</strong> ${defect.comments}
+                        </div>
+                    ` : ''}
+                    <div class="defect-info" style="color: #666; font-size: 0.8rem;">
+                        <strong>Date Added:</strong> ${defect.dateAdded}
+                    </div>
+                    
+                    ${defect.photo ? `
+                        <img src="${defect.photo}" alt="Defect photo" class="defect-photo">
+                    ` : ''}
+                    
+                    <div class="defect-actions">
+                        <select onchange="updateDefectStatus(${defect.id}, this.value)">
+                            <option value="unassigned" ${defect.status === 'unassigned' ? 'selected' : ''}>Unassigned</option>
+                            <option value="assigned" ${defect.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                            <option value="in-progress" ${defect.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="fixed" ${defect.status === 'fixed' ? 'selected' : ''}>Fixed</option>
+                            <option value="verified" ${defect.status === 'verified' ? 'selected' : ''}>Verified</option>
+                        </select>
+                        <button onclick="deleteDefect(${defect.id})" class="btn btn-danger" style="padding: 0.5rem;">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getPriorityIcon(priority) {
+            switch (priority) {
+                case 'high': return '🔴';
+                case 'medium': return '🟡';
+                case 'low': return '🟢';
+                default: return '⚪';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'unassigned': return '⚪';
+                case 'assigned': return '🟡';
+                case 'in-progress': return '🔵';
+                case 'fixed': return '🔧';
+                case 'verified': return '✅';
+                default: return '⚪';
+            }
+        }
+
+        function updateDefectStatus(id, newStatus) {
+            const defect = defects.find(d => d.id === id);
+            if (defect) {
+                defect.status = newStatus;
+                renderDefects();
+                updateStats();
+                saveCurrentCase();
+            }
+        }
+
+        function deleteDefect(id) {
+            if (confirm('Are you sure you want to delete this defect?')) {
+                defects = defects.filter(d => d.id !== id);
+                renderDefects();
+                updateStats();
+                saveCurrentCase();
+            }
+        }
+
+        function updateStats() {
+            const total = defects.length;
+            const open = defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length;
+            const fixed = defects.filter(d => d.status === 'fixed').length;
+            const verified = defects.filter(d => d.status === 'verified').length;
+
+            document.getElementById('totalDefects').textContent = total;
+            document.getElementById('openDefects').textContent = open;
+            document.getElementById('fixedDefects').textContent = fixed;
+            document.getElementById('verifiedDefects').textContent = verified;
+        }
+
+        function exportToExcel() {
+            if (defects.length === 0) {
+                alert('No defects to export!');
+                return;
+            }
+
+            const currentCase = cases[currentCaseIndex];
+            const clientName = currentCase.clientName || 'N/A';
+            const projectName = currentCase.projectName || 'N/A';
+            const caseNumber = `Case #${currentCase.id}`;
+
+            // Prepare data for Excel
+            const excelData = defects.map(defect => ({
+                'Case Number': caseNumber,
+                'Client Name': clientName,
+                'Project Name': projectName,
+                'Inspection Date': currentCase.inspectionDate || 'N/A',
+                'Inspector': currentCase.inspectionConductedBy || 'N/A',
+                'Defect ID': defect.id,
+                'Description': defect.description,
+                'Priority': defect.priority.toUpperCase(),
+                'Status': defect.status.toUpperCase(),
+                'Assigned To': defect.assignedTo || 'N/A',
+                'Repair Cost': defect.repairCost > 0 ? `${defect.repairCost.toFixed(2)}` : '$0.00',
+                'Action Items': defect.actionItems || 'N/A',
+                'Comments': defect.comments || 'N/A',
+                'Date Added': defect.dateAdded,
+                'Has Photo': defect.photo ? 'Yes' : 'No'
+            }));
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Summary sheet
+            const summaryData = [
+                ['DEFECT TRACKING REPORT', ''],
+                ['', ''],
+                ['Case Number', caseNumber],
+                ['Client Name', clientName],
+                ['Project Name', projectName],
+                ['Project Number', currentCase.projectNumber || 'N/A'],
+                ['Inspection Date', currentCase.inspectionDate || 'N/A'],
+                ['Inspector', currentCase.inspectionConductedBy || 'N/A'],
+                ['Report Generated', new Date().toLocaleDateString()],
+                ['', ''],
+                ['STATISTICS', ''],
+                ['Total Defects', defects.length],
+                ['Open Defects', defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length],
+                ['Fixed Defects', defects.filter(d => d.status === 'fixed').length],
+                ['Verified Defects', defects.filter(d => d.status === 'verified').length],
+                ['High Priority', defects.filter(d => d.priority === 'high').length],
+                ['Medium Priority', defects.filter(d => d.priority === 'medium').length],
+                ['Low Priority', defects.filter(d => d.priority === 'low').length],
+                ['Total Repair Cost', `${defects.reduce((sum, d) => sum + (d.repairCost || 0), 0).toFixed(2)}`]
+            ];
+            
+            const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+            // Detailed defects sheet
+            const defectsWs = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, defectsWs, 'Defects');
+
+            // Save file
+            const fileName = `Defect_Report_${caseNumber.replace('#', '')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`Excel report exported successfully!\n\nFile: ${fileName}\n\nIncludes:\n✓ Case summary\n✓ All defect details\n✓ Statistics\n✓ Cost breakdown`);
+        }
+
+        function exportToPDF() {
+            if (defects.length === 0) {
+                alert('No defects to export!');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const currentCase = cases[currentCaseIndex];
+            const clientName = currentCase.clientName || 'N/A';
+            const projectName = currentCase.projectName || 'N/A';
+            const caseNumber = `Case #${currentCase.id}`;
+
+            let yPosition = 20;
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont(undefined, 'bold');
+            doc.text('DEFECT TRACKING REPORT', 20, yPosition);
+            yPosition += 25;
+
+            // Case Information
+            doc.setDrawColor(132, 196, 65);
+            doc.setLineWidth(1);
+            doc.rect(15, yPosition - 5, 180, 45);
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('CASE INFORMATION', 20, yPosition + 5);
+            yPosition += 15;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Case Number: ${caseNumber}`, 20, yPosition);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 120, yPosition);
+            yPosition += 8;
+            doc.text(`Client: ${clientName}`, 20, yPosition);
+            yPosition += 8;
+            doc.text(`Project: ${projectName}`, 20, yPosition);
+            yPosition += 8;
+            doc.text(`Inspector: ${currentCase.inspectionConductedBy || 'N/A'}`, 20, yPosition);
+            yPosition += 20;
+
+            // Statistics
+            doc.setFont(undefined, 'bold');
+            doc.text('STATISTICS SUMMARY', 20, yPosition);
+            yPosition += 10;
+            
+            doc.setFont(undefined, 'normal');
+            const stats = {
+                total: defects.length,
+                open: defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length,
+                fixed: defects.filter(d => d.status === 'fixed').length,
+                verified: defects.filter(d => d.status === 'verified').length,
+                totalCost: defects.reduce((sum, d) => sum + (d.repairCost || 0), 0)
+            };
+            
+            doc.text(`Total Defects: ${stats.total}`, 20, yPosition);
+            doc.text(`Open: ${stats.open}`, 80, yPosition);
+            doc.text(`Fixed: ${stats.fixed}`, 120, yPosition);
+            doc.text(`Verified: ${stats.verified}`, 160, yPosition);
+            yPosition += 8;
+            doc.text(`Total Repair Cost: ${stats.totalCost.toFixed(2)}`, 20, yPosition);
+            yPosition += 20;
+
+            // Defects
+            doc.addPage();
+            yPosition = 20;
+            doc.setFont(undefined, 'bold');
+            doc.text('DETAILED DEFECTS', 20, yPosition);
+            yPosition += 15;
+
+            defects.forEach((defect, index) => {
+                if (yPosition > 200) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+
+                // Defect header
+                doc.setDrawColor(132, 196, 65);
+                doc.rect(15, yPosition - 5, 180, 12);
+                doc.setFont(undefined, 'bold');
+                doc.text(`DEFECT #${defect.id} - ${defect.priority.toUpperCase()} PRIORITY`, 20, yPosition + 3);
+                yPosition += 15;
+                
+                doc.setFont(undefined, 'normal');
+                doc.text(`Status: ${defect.status.toUpperCase()}`, 20, yPosition);
+                doc.text(`Date: ${defect.dateAdded}`, 120, yPosition);
+                yPosition += 8;
+                
+                if (defect.assignedTo) {
+                    doc.text(`Assigned To: ${defect.assignedTo}`, 20, yPosition);
+                    yPosition += 8;
+                }
+                
+                if (defect.repairCost > 0) {
+                    doc.text(`Repair Cost: ${defect.repairCost.toFixed(2)}`, 20, yPosition);
+                    yPosition += 8;
+                }
+                
+                // Description
+                doc.setFont(undefined, 'bold');
+                doc.text('Description:', 20, yPosition);
+                yPosition += 6;
+                doc.setFont(undefined, 'normal');
+                const descLines = doc.splitTextToSize(defect.description, 170);
+                doc.text(descLines, 20, yPosition);
+                yPosition += descLines.length * 6 + 4;
+                
+                // Action Items
+                if (defect.actionItems) {
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Action Items:', 20, yPosition);
+                    yPosition += 6;
+                    doc.setFont(undefined, 'normal');
+                    const actionLines = doc.splitTextToSize(defect.actionItems, 170);
+                    doc.text(actionLines, 20, yPosition);
+                    yPosition += actionLines.length * 6 + 4;
+                }
+                
+                // Comments
+                if (defect.comments) {
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Comments:', 20, yPosition);
+                    yPosition += 6;
+                    doc.setFont(undefined, 'normal');
+                    const commentLines = doc.splitTextToSize(defect.comments, 170);
+                    doc.text(commentLines, 20, yPosition);
+                    yPosition += commentLines.length * 6 + 4;
+                }
+                
+                // Photo
+                if (defect.photo) {
+                    if (yPosition > 150) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Photo Evidence:', 20, yPosition);
+                    yPosition += 8;
+                    
+                    try {
+                        const imgWidth = 100;
+                        const imgHeight = 75;
+                        doc.addImage(defect.photo, 'JPEG', 20, yPosition, imgWidth, imgHeight);
+                        yPosition += imgHeight + 10;
+                    } catch (e) {
+                        doc.setFont(undefined, 'italic');
+                        doc.text('[Photo could not be embedded]', 20, yPosition);
+                        yPosition += 8;
+                    }
+                }
+                
+                yPosition += 15;
+            });
+
+            // Save PDF
+            const fileName = `Defect_Report_${caseNumber.replace('#', '')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            alert(`PDF report generated successfully!\n\nFile: ${fileName}\n\nIncludes:\n✓ Case information\n✓ Statistics summary\n✓ All defects with photos\n✓ Cost breakdown`);
+        }
+
+        function closeFinishModal() {
+            document.getElementById('finishModal').classList.remove('visible');
+        }
+
+        function proceedWithFinish() {
+            closeFinishModal();
+            exportToPDF();
+        }
+
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('inspectionDate').valueAsDate = new Date();
+        });
+    </script>
+</body>
+</html>
