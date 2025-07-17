@@ -956,41 +956,19 @@
         <div class="content">
             <!-- Save Indicator -->
             <div id="saveIndicator" class="save-indicator">✓ Saved</div>
-
+       
             <!-- Case Navigation -->
             <div class="case-navigation">
                 <div class="case-controls">
-                    <button id="prevCase" class="nav-btn" onclick="navigateCase(-1)">← Previous</button>
                     <button onclick="createNewCase()" class="btn" style="padding: 10px 15px; font-size: 14px;">+ New Case</button>
                 </div>
                 <div class="case-info">
-                    <div class="case-number" id="currentCaseNumber">Case #1</div>
+                    <div class="case-number" id="currentCaseNumber">Case #1000</div>
                     <div style="color: #666; font-size: 0.9rem;" id="caseCounter">1 of 1</div>
                 </div>
                 <div class="case-controls">
-                    <button onclick="saveCurrentCase()" class="btn" style="padding: 10px 15px; font-size: 14px;">Save</button>
-                    <button onclick="finishCase()" class="btn btn-success" style="padding: 10px 15px; font-size: 14px; background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">Finish & Email</button>
+                    <button id="prevCase" class="nav-btn" onclick="navigateCase(-1)">← Previous</button>
                     <button id="nextCase" class="nav-btn" onclick="navigateCase(1)">Next →</button>
-                </div>
-            </div>
-
-            <!-- Statistics -->
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalDefects">0</div>
-                    <div>Total Defects</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="openDefects">0</div>
-                    <div>Open Defects</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="fixedDefects">0</div>
-                    <div>Fixed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="verifiedDefects">0</div>
-                    <div>Verified</div>
                 </div>
             </div>
 
@@ -1118,9 +1096,9 @@
 
             <!-- Export Options -->
             <div class="export-buttons">
-                <button onclick="exportToExcel()" class="btn" style="background: linear-gradient(135deg, #84C441 0%, #9fd356 100%);">📊 Export to Excel</button>
-                <button onclick="exportToPDF()" class="btn" style="background: linear-gradient(135deg, #84C441 0%, #9fd356 100%);">📄 Export to PDF</button>
-                <button onclick="downloadReport()" class="btn" style="background: linear-gradient(135deg, #84C441 0%, #9fd356 100%);">📥 Download Report</button>
+                <button onclick="exportToExcel()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📊 Export to Excel</button>
+                <button onclick="exportToPDF()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📄 Export to PDF</button>
+                <button onclick="downloadReport()" class="btn" style="background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">📥 Download Report</button>
             </div>
 
             <!-- Defects List -->
@@ -1137,7 +1115,7 @@
             
             <!-- Footer -->
             <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-                <button onclick="returnToHome()" class="btn" style="padding: 10px 20px; font-size: 14px; background: linear-gradient(135deg, #84C441 0%, #9fd356 100%);">
+                <button onclick="returnToHome()" class="btn" style="padding: 10px 20px; font-size: 14px; background: linear-gradient(135deg, #494949 0%, #5a5a5a 100%);">
                     🏠 Return to Home
                 </button>
                 <div style="flex: 1; text-align: right;">Powered by Kaza Vi'Nova 🌈</div>
@@ -1281,12 +1259,17 @@
         function updateCaseNavigation() {
             const caseNumberEl = document.getElementById('currentCaseNumber');
             const caseCounterEl = document.getElementById('caseCounter');
+            const prevBtn = document.getElementById('prevCase');
+            const nextBtn = document.getElementById('nextCase');
             
             const currentCase = cases[currentCaseIndex];
             const displayNumber = `Case #${currentCase.id}`;
             
             caseNumberEl.textContent = displayNumber;
             caseCounterEl.textContent = `${currentCaseIndex + 1} of ${cases.length}`;
+            
+            prevBtn.disabled = currentCaseIndex === 0;
+            nextBtn.disabled = currentCaseIndex === cases.length - 1;
         }
 
         function performSearch() {
