@@ -798,7 +798,7 @@
                 WABi & ESA<br/>Defect Tracker
             </h1>
             <p class="landing-subtitle">
-                WABi & ESA Quality Control & Defect Management
+                Quality Control & Defect Management
             </p>
             <button class="landing-button" onclick="enterApp()">
                 Start Inspection
@@ -840,34 +840,6 @@
                         <button id="nextCase" class="case-nav-btn" onclick="navigateCase(1)">Next →</button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Search -->
-            <div class="card">
-                <h3 class="card-title">Search Cases</h3>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <div class="search-container" style="flex: 1;">
-                        <span class="search-icon">🔍</span>
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            class="search-input"
-                            placeholder="Search cases..." 
-                            oninput="performSearch()"
-                        >
-                    </div>
-                    <button onclick="clearSearch()" class="btn">Clear</button>
-                </div>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <button onclick="showSavedCases()" class="btn btn-secondary" style="flex: 1;">
-                        View Saved Cases
-                    </button>
-                    <button onclick="deleteCurrentCase()" class="btn btn-danger" style="flex: 1;">
-                        Delete Case
-                    </button>
-                </div>
-                <div id="searchResults" class="search-results"></div>
-                <div id="savedCasesResults" class="search-results"></div>
             </div>
 
             <!-- Project Information -->
@@ -971,6 +943,37 @@
                 </div>
             </div>
 
+            <!-- Search -->
+            <div class="card">
+                <h3 class="card-title">Search Cases</h3>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div class="search-container" style="flex: 1;">
+                        <span class="search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input"
+                            placeholder="Search cases..." 
+                            oninput="performSearch()"
+                        >
+                    </div>
+                    <button onclick="clearSearch()" class="btn">Clear</button>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <button onclick="showSavedCases()" class="btn btn-secondary" style="flex: 1;">
+                        View Saved Cases
+                    </button>
+                    <button onclick="deleteCurrentCase()" class="btn btn-danger" style="flex: 1;">
+                        Delete Case
+                    </button>
+                    <button onclick="testStorage()" class="btn" style="flex: 1; font-size: 0.8rem;">
+                        Test Storage
+                    </button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+                <div id="savedCasesResults" class="search-results"></div>
+            </div>
+
             <!-- Statistics -->
             <div class="grid-4">
                 <div class="stat-card">
@@ -1032,10 +1035,13 @@
         // Data persistence functions
         function saveCasesToStorage() {
             try {
+                console.log('Saving cases to storage:', cases);
                 localStorage.setItem('defectTrackerCases', JSON.stringify(cases));
                 localStorage.setItem('defectTrackerCurrentIndex', currentCaseIndex.toString());
+                console.log('Cases saved successfully');
             } catch (e) {
-                console.warn('Could not save to localStorage:', e);
+                console.error('Could not save to localStorage:', e);
+                alert('Warning: Could not save data to browser storage. Your changes may be lost.');
             }
         }
 
@@ -1044,23 +1050,34 @@
                 const savedCases = localStorage.getItem('defectTrackerCases');
                 const savedIndex = localStorage.getItem('defectTrackerCurrentIndex');
                 
-                if (savedCases) {
+                console.log('Attempting to load cases from storage');
+                console.log('Saved cases:', savedCases);
+                console.log('Saved index:', savedIndex);
+                
+                if (savedCases && savedCases !== 'null') {
                     const parsedCases = JSON.parse(savedCases);
-                    if (parsedCases && parsedCases.length > 0) {
+                    if (parsedCases && Array.isArray(parsedCases) && parsedCases.length > 0) {
                         cases = parsedCases;
                         currentCaseIndex = savedIndex ? parseInt(savedIndex) : 0;
                         
                         // Ensure currentCaseIndex is valid
-                        if (currentCaseIndex >= cases.length) {
-                            currentCaseIndex = cases.length - 1;
+                        if (currentCaseIndex >= cases.length || currentCaseIndex < 0) {
+                            currentCaseIndex = 0;
                         }
                         
+                        // Restore defects and counter for current case
+                        const currentCase = cases[currentCaseIndex];
+                        defects = currentCase.defects || [];
+                        defectCounter = currentCase.defectCounter || 1;
+                        
+                        console.log('Cases loaded successfully:', cases);
                         loadCase(currentCaseIndex);
                         return true;
                     }
                 }
+                console.log('No valid saved cases found');
             } catch (e) {
-                console.warn('Could not load from localStorage:', e);
+                console.error('Could not load from localStorage:', e);
             }
             return false;
         }
@@ -1068,26 +1085,39 @@
         function deleteCaseFromStorage(caseId) {
             try {
                 const savedCases = localStorage.getItem('defectTrackerCases');
-                if (savedCases) {
+                if (savedCases && savedCases !== 'null') {
                     let parsedCases = JSON.parse(savedCases);
                     parsedCases = parsedCases.filter(c => c.id !== caseId);
                     localStorage.setItem('defectTrackerCases', JSON.stringify(parsedCases));
+                    console.log('Case deleted from storage:', caseId);
                 }
             } catch (e) {
-                console.warn('Could not delete from localStorage:', e);
+                console.error('Could not delete from localStorage:', e);
             }
         }
 
         function getAllSavedCases() {
             try {
                 const savedCases = localStorage.getItem('defectTrackerCases');
-                if (savedCases) {
-                    return JSON.parse(savedCases);
+                if (savedCases && savedCases !== 'null') {
+                    const parsedCases = JSON.parse(savedCases);
+                    console.log('Retrieved saved cases:', parsedCases);
+                    return Array.isArray(parsedCases) ? parsedCases : [];
                 }
             } catch (e) {
-                console.warn('Could not load saved cases:', e);
+                console.error('Could not load saved cases:', e);
             }
             return [];
+        }
+
+        function clearAllStorage() {
+            try {
+                localStorage.removeItem('defectTrackerCases');
+                localStorage.removeItem('defectTrackerCurrentIndex');
+                console.log('Storage cleared');
+            } catch (e) {
+                console.error('Could not clear storage:', e);
+            }
         }
         function enterApp() {
             document.getElementById('landingPage').classList.add('hidden');
@@ -1210,6 +1240,9 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const resultsContainer = document.getElementById('searchResults');
             
+            // Hide saved cases results when searching
+            document.getElementById('savedCasesResults').classList.remove('visible');
+            
             if (!searchTerm.trim()) {
                 resultsContainer.classList.remove('visible');
                 return;
@@ -1240,6 +1273,138 @@
             }
         }
 
+        function showSavedCases() {
+            const savedCases = getAllSavedCases();
+            const resultsContainer = document.getElementById('savedCasesResults');
+            
+            // Hide search results
+            document.getElementById('searchResults').classList.remove('visible');
+            clearSearch();
+            
+            if (savedCases.length > 0) {
+                resultsContainer.innerHTML = `
+                    <div style="margin-bottom: 0.75rem; font-weight: 600; color: #84C441;">
+                        Saved Cases (${savedCases.length} total):
+                    </div>
+                ` + savedCases.map(caseItem => {
+                    const lastSaved = caseItem.lastSaved ? new Date(caseItem.lastSaved).toLocaleDateString() : 'Unknown';
+                    return `
+                        <div class="search-result-item" onclick="loadSavedCase(${caseItem.id})">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong>Case #${caseItem.id}</strong><br>
+                                    <span style="color: #666;">${caseItem.clientName || 'No client'} - ${caseItem.projectName || 'No project'}</span><br>
+                                    <small>${caseItem.defects.length} defects | Last saved: ${lastSaved}</small>
+                                </div>
+                                <button onclick="event.stopPropagation(); deleteSavedCase(${caseItem.id})" 
+                                        style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; cursor: pointer;">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                resultsContainer.classList.add('visible');
+            } else {
+                resultsContainer.innerHTML = '<div style="text-align: center; color: #666;">No saved cases found</div>';
+                resultsContainer.classList.add('visible');
+            }
+        }
+
+        function loadSavedCase(caseId) {
+            const savedCases = getAllSavedCases();
+            const savedCase = savedCases.find(c => c.id === caseId);
+            
+            if (savedCase) {
+                // Add to current cases if not already present
+                const existingIndex = cases.findIndex(c => c.id === caseId);
+                if (existingIndex === -1) {
+                    cases.push(savedCase);
+                    currentCaseIndex = cases.length - 1;
+                } else {
+                    // Update existing case with saved data
+                    cases[existingIndex] = savedCase;
+                    currentCaseIndex = existingIndex;
+                }
+                
+                loadCase(currentCaseIndex);
+                saveCasesToStorage();
+                clearSearch();
+                document.getElementById('savedCasesResults').classList.remove('visible');
+                showSaveIndicator();
+            }
+        }
+
+        function deleteSavedCase(caseId) {
+            if (confirm('Are you sure you want to permanently delete this saved case?')) {
+                deleteCaseFromStorage(caseId);
+                showSavedCases(); // Refresh the saved cases list
+            }
+        }
+
+        function deleteCurrentCase() {
+            if (cases.length <= 1) {
+                alert('Cannot delete the last remaining case.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete the current case? This action cannot be undone.')) {
+                const caseToDelete = cases[currentCaseIndex];
+                
+                // Remove from current cases array
+                cases.splice(currentCaseIndex, 1);
+                
+                // Adjust current case index
+                if (currentCaseIndex >= cases.length) {
+                    currentCaseIndex = cases.length - 1;
+                }
+                
+                // Delete from storage
+                deleteCaseFromStorage(caseToDelete.id);
+                
+                // Load the new current case
+                loadCase(currentCaseIndex);
+                saveCasesToStorage();
+                showSaveIndicator();
+            }
+        }
+
+        // Test function to debug storage issues
+        function testStorage() {
+            console.log('=== STORAGE TEST ===');
+            console.log('Current cases:', cases);
+            console.log('Current case index:', currentCaseIndex);
+            console.log('Current defects:', defects);
+            
+            // Test save
+            saveCurrentCase();
+            
+            // Test retrieve
+            const savedCases = localStorage.getItem('defectTrackerCases');
+            const savedIndex = localStorage.getItem('defectTrackerCurrentIndex');
+            
+            console.log('Saved cases in storage:', savedCases);
+            console.log('Saved index in storage:', savedIndex);
+            
+            // Test getAllSavedCases
+            const allSaved = getAllSavedCases();
+            console.log('All saved cases via function:', allSaved);
+            
+            alert(`Storage Test Complete!\nCheck browser console for details.\n\nCases in memory: ${cases.length}\nCases in storage: ${allSaved.length}\nCurrent case: #${cases[currentCaseIndex]?.id}`);
+        }
+
+        // Auto-save when page unloads
+        window.addEventListener('beforeunload', function() {
+            saveCurrentCase();
+        });
+
+        // Auto-save periodically (every 30 seconds)
+        setInterval(function() {
+            if (cases.length > 0) {
+                saveCurrentCase();
+            }
+        }, 30000);
+
         function switchToCase(index) {
             saveCurrentCase();
             currentCaseIndex = index;
@@ -1250,6 +1415,7 @@
         function clearSearch() {
             document.getElementById('searchInput').value = '';
             document.getElementById('searchResults').classList.remove('visible');
+            document.getElementById('savedCasesResults').classList.remove('visible');
         }
 
         function previewImage(input) {
@@ -1326,6 +1492,8 @@
             renderDefects();
             updateStats();
             clearForm();
+            
+            // Immediately save after adding defect
             saveCurrentCase();
         }
 
