@@ -106,7 +106,166 @@
             margin-top: 20px;
         }
 
-        @keyframes bounce {
+        /* Case Manager Page Styles */
+        .case-manager-content {
+            text-align: center;
+            color: white;
+            max-width: 800px;
+            padding: 40px 20px;
+            width: 100%;
+            position: relative;
+        }
+
+        .case-manager-header {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .case-manager-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .case-manager-btn {
+            background: #84C441;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .case-manager-btn:hover {
+            background: #6ba235;
+            transform: translateY(-1px);
+        }
+
+        .case-manager-btn-primary {
+            background: linear-gradient(45deg, #84C441, #9fd356);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .case-manager-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .case-manager-btn-danger {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .case-manager-btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .manager-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .manager-case-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid #84C441;
+        }
+
+        .manager-case-item:hover {
+            background: #f3f4f6;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .manager-case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .manager-case-title {
+            font-weight: 700;
+            color: #374151;
+            font-size: 1.1rem;
+        }
+
+        .manager-case-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .manager-case-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+
+        .manager-case-stat {
+            background: #e5e7eb;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #374151;
+        }
+
+        .manager-case-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .manager-case-btn {
+            background: #84C441;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .manager-case-btn:hover {
+            background: #6ba235;
+        }
+
+        .manager-case-btn-danger {
+            background: #dc2626;
+        }
+
+        .manager-case-btn-danger:hover {
+            background: #b91c1c;
+        }
             0%, 20%, 50%, 80%, 100% {
                 transform: translateY(0);
             }
@@ -801,10 +960,68 @@
                 Quality Control & Defect Management
             </p>
             <button class="landing-button" onclick="enterApp()">
-                Start Inspection
+                Start New Inspection
+            </button>
+            <button class="landing-button" onclick="showCaseManager()" style="background: rgba(255,255,255,0.2); margin-top: 10px;">
+                View Saved Cases
             </button>
             <div class="landing-powered">
                 Powered by Kaza 🌈
+            </div>
+        </div>
+    </div>
+
+    <!-- Case Manager Page -->
+    <div id="caseManagerPage" class="landing-page hidden">
+        <div class="case-manager-content">
+            <div class="case-manager-header">
+                <button onclick="returnToLanding()" class="header-btn" style="position: absolute; left: 20px; top: 20px;">
+                    ← Back
+                </button>
+                <h1 style="color: #84C441; font-size: 2rem; margin-bottom: 10px;">Case Manager</h1>
+                <p style="color: white; opacity: 0.9; margin-bottom: 30px;">Search, view, and manage your saved cases</p>
+            </div>
+
+            <!-- Search Section -->
+            <div class="case-manager-card">
+                <h3 style="color: #84C441; margin-bottom: 15px;">🔍 Search Cases</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1; position: relative;">
+                        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af;">🔍</span>
+                        <input 
+                            type="text" 
+                            id="managerSearchInput" 
+                            placeholder="Search by client, project, or case number..." 
+                            style="width: 100%; padding: 12px 12px 12px 40px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px;"
+                            oninput="performManagerSearch()"
+                        >
+                    </div>
+                    <button onclick="clearManagerSearch()" class="case-manager-btn">Clear</button>
+                </div>
+                <div id="managerSearchResults" class="manager-results" style="display: none;"></div>
+            </div>
+
+            <!-- All Saved Cases -->
+            <div class="case-manager-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #84C441; margin: 0;">📁 All Saved Cases</h3>
+                    <button onclick="refreshSavedCases()" class="case-manager-btn">Refresh</button>
+                </div>
+                <div id="allSavedCases" class="manager-results">
+                    <div style="text-align: center; color: #666; padding: 20px;">
+                        Loading saved cases...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
+                <button onclick="enterApp()" class="case-manager-btn-primary">
+                    + Start New Inspection
+                </button>
+                <button onclick="exportAllCases()" class="case-manager-btn">
+                    📊 Export All Cases
+                </button>
             </div>
         </div>
     </div>
@@ -943,37 +1160,6 @@
                 </div>
             </div>
 
-            <!-- Search -->
-            <div class="card">
-                <h3 class="card-title">Search Cases</h3>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <div class="search-container" style="flex: 1;">
-                        <span class="search-icon">🔍</span>
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            class="search-input"
-                            placeholder="Search cases..." 
-                            oninput="performSearch()"
-                        >
-                    </div>
-                    <button onclick="clearSearch()" class="btn">Clear</button>
-                </div>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <button onclick="showSavedCases()" class="btn btn-secondary" style="flex: 1;">
-                        View Saved Cases
-                    </button>
-                    <button onclick="deleteCurrentCase()" class="btn btn-danger" style="flex: 1;">
-                        Delete Case
-                    </button>
-                    <button onclick="testStorage()" class="btn" style="flex: 1; font-size: 0.8rem;">
-                        Test Storage
-                    </button>
-                </div>
-                <div id="searchResults" class="search-results"></div>
-                <div id="savedCasesResults" class="search-results"></div>
-            </div>
-
             <!-- Statistics -->
             <div class="grid-4">
                 <div class="stat-card">
@@ -1005,6 +1191,12 @@
                     <button onclick="saveCurrentCase()" class="btn">
                         Save
                     </button>
+                    <button onclick="showCaseManager()" class="btn btn-secondary">
+                        Case Manager
+                    </button>
+                    <button onclick="exportToExcel()" class="btn btn-blue">
+                        Excel Export
+                    </button>
                     <button onclick="exportToPDF()" class="btn btn-blue">
                         PDF Export
                     </button>
@@ -1032,7 +1224,315 @@
         let defects = [];
         let defectCounter = 1;
 
-        // Data persistence functions
+        // Case Manager Page Functions
+        function showCaseManager() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('visible');
+            setTimeout(() => {
+                document.getElementById('caseManagerPage').classList.remove('hidden');
+                document.getElementById('landingPage').style.display = 'none';
+                refreshSavedCases();
+            }, 500);
+        }
+
+        function returnToLanding() {
+            document.getElementById('caseManagerPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'flex';
+                document.getElementById('landingPage').classList.remove('hidden');
+            }, 500);
+        }
+
+        function refreshSavedCases() {
+            const allCases = getAllSavedCases();
+            const container = document.getElementById('allSavedCases');
+            
+            if (allCases.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #666; padding: 40px;">
+                        <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;">📁</div>
+                        <h3>No saved cases found</h3>
+                        <p>Start your first inspection to create a case</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = allCases.map(caseItem => {
+                const lastSaved = caseItem.lastSaved ? new Date(caseItem.lastSaved).toLocaleDateString() : 'Unknown';
+                const defectCount = caseItem.defects ? caseItem.defects.length : 0;
+                const openDefects = caseItem.defects ? caseItem.defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length : 0;
+                const totalCost = caseItem.defects ? caseItem.defects.reduce((sum, d) => sum + (d.repairCost || 0), 0) : 0;
+
+                return `
+                    <div class="manager-case-item" onclick="loadCaseFromManager(${caseItem.id})">
+                        <div class="manager-case-header">
+                            <div class="manager-case-title">Case #${caseItem.id}</div>
+                            <div style="font-size: 0.8rem; color: #9ca3af;">Last saved: ${lastSaved}</div>
+                        </div>
+                        <div class="manager-case-info">
+                            <strong>Client:</strong> ${caseItem.clientName || 'Not specified'}<br>
+                            <strong>Project:</strong> ${caseItem.projectName || 'Not specified'}<br>
+                            <strong>Project #:</strong> ${caseItem.projectNumber || 'N/A'}<br>
+                            <strong>Inspector:</strong> ${caseItem.inspectionConductedBy || 'Not specified'}
+                        </div>
+                        <div class="manager-case-stats">
+                            <span class="manager-case-stat">${defectCount} Total Defects</span>
+                            <span class="manager-case-stat">${openDefects} Open</span>
+                            ${totalCost > 0 ? `<span class="manager-case-stat">${totalCost.toFixed(2)} Total Cost</span>` : ''}
+                        </div>
+                        <div class="manager-case-actions">
+                            <button onclick="event.stopPropagation(); loadCaseFromManager(${caseItem.id})" class="manager-case-btn">
+                                📝 Edit Case
+                            </button>
+                            <button onclick="event.stopPropagation(); exportSingleCase(${caseItem.id})" class="manager-case-btn">
+                                📊 Export
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteCaseFromManager(${caseItem.id})" class="manager-case-btn manager-case-btn-danger">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function performManagerSearch() {
+            const searchInput = document.getElementById('managerSearchInput');
+            const resultsContainer = document.getElementById('managerSearchResults');
+            
+            if (!searchInput || !resultsContainer) {
+                console.error('Search elements not found');
+                return;
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            if (!searchTerm.trim()) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            const allCases = getAllSavedCases();
+            const matchingCases = allCases.filter(caseItem => {
+                return (caseItem.clientName || '').toLowerCase().includes(searchTerm) ||
+                       (caseItem.projectName || '').toLowerCase().includes(searchTerm) ||
+                       (caseItem.projectNumber || '').toLowerCase().includes(searchTerm) ||
+                       `case #${caseItem.id}`.toLowerCase().includes(searchTerm);
+            });
+
+            if (matchingCases.length > 0) {
+                resultsContainer.innerHTML = matchingCases.map(caseItem => {
+                    const lastSaved = caseItem.lastSaved ? new Date(caseItem.lastSaved).toLocaleDateString() : 'Unknown';
+                    const defectCount = caseItem.defects ? caseItem.defects.length : 0;
+                    return `
+                        <div class="manager-case-item" onclick="loadCaseFromManager(${caseItem.id})">
+                            <div class="manager-case-header">
+                                <div class="manager-case-title">Case #${caseItem.id}</div>
+                                <div style="font-size: 0.8rem; color: #9ca3af;">Last saved: ${lastSaved}</div>
+                            </div>
+                            <div class="manager-case-info">
+                                <strong>Client:</strong> ${caseItem.clientName || 'Not specified'}<br>
+                                <strong>Project:</strong> ${caseItem.projectName || 'Not specified'}<br>
+                                <strong>Defects:</strong> ${defectCount}
+                            </div>
+                            <div class="manager-case-actions">
+                                <button onclick="event.stopPropagation(); loadCaseFromManager(${caseItem.id})" class="manager-case-btn">
+                                    Edit Case
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                resultsContainer.style.display = 'block';
+            } else {
+                resultsContainer.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No matching cases found</div>';
+                resultsContainer.style.display = 'block';
+            }
+        }
+
+        function clearManagerSearch() {
+            const searchInput = document.getElementById('managerSearchInput');
+            const resultsContainer = document.getElementById('managerSearchResults');
+            
+            if (searchInput) searchInput.value = '';
+            if (resultsContainer) resultsContainer.style.display = 'none';
+        }
+
+        function loadCaseFromManager(caseId) {
+            console.log('Loading case:', caseId);
+            const allCases = getAllSavedCases();
+            const selectedCase = allCases.find(c => c.id === caseId);
+            
+            if (selectedCase) {
+                console.log('Found case:', selectedCase);
+                
+                // Initialize cases array if empty
+                if (!cases || cases.length === 0) {
+                    cases = [];
+                }
+                
+                // Add to current cases if not already present
+                const existingIndex = cases.findIndex(c => c.id === caseId);
+                if (existingIndex === -1) {
+                    cases.push(selectedCase);
+                    currentCaseIndex = cases.length - 1;
+                } else {
+                    cases[existingIndex] = selectedCase;
+                    currentCaseIndex = existingIndex;
+                }
+                
+                // Set global variables
+                defects = selectedCase.defects || [];
+                defectCounter = selectedCase.defectCounter || 1;
+                
+                console.log('Transitioning to main app...');
+                
+                // Hide case manager page and show main app
+                document.getElementById('caseManagerPage').classList.add('hidden');
+                setTimeout(() => {
+                    document.getElementById('caseManagerPage').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('mainApp').classList.add('visible');
+                    
+                    // Load the case data into the form
+                    loadCase(currentCaseIndex);
+                    saveCasesToStorage();
+                    console.log('Case loaded successfully');
+                }, 500);
+            } else {
+                console.error('Case not found:', caseId);
+                alert('Error: Case not found');
+            }
+        }
+
+        function deleteCaseFromManager(caseId) {
+            if (confirm('Are you sure you want to permanently delete this case? This action cannot be undone.')) {
+                deleteCaseFromStorage(caseId);
+                
+                // Also remove from current cases array if present
+                const index = cases.findIndex(c => c.id === caseId);
+                if (index !== -1) {
+                    cases.splice(index, 1);
+                    if (currentCaseIndex >= cases.length) {
+                        currentCaseIndex = Math.max(0, cases.length - 1);
+                    }
+                }
+                
+                refreshSavedCases();
+                alert('Case deleted successfully');
+            }
+        }
+
+        function exportSingleCase(caseId) {
+            const allCases = getAllSavedCases();
+            const selectedCase = allCases.find(c => c.id === caseId);
+            
+            if (selectedCase) {
+                // Temporarily set the case as current for export
+                const originalCases = [...cases];
+                const originalIndex = currentCaseIndex;
+                const originalDefects = [...defects];
+                
+                cases = [selectedCase];
+                currentCaseIndex = 0;
+                defects = selectedCase.defects || [];
+                
+                // Export PDF
+                exportToPDF();
+                
+                // Restore original state
+                cases = originalCases;
+                currentCaseIndex = originalIndex;
+                defects = originalDefects;
+            }
+        }
+
+        function exportAllCases() {
+            const allCases = getAllSavedCases();
+            if (allCases.length === 0) {
+                alert('No cases to export!');
+                return;
+            }
+
+            if (confirm(`Export all ${allCases.length} saved cases to Excel? This may take a moment.`)) {
+                // Create comprehensive workbook with all cases
+                const wb = XLSX.utils.book_new();
+                
+                // Summary of all cases
+                const summaryData = [
+                    ['ALL CASES SUMMARY', '', '', ''],
+                    ['Report Generated', new Date().toLocaleDateString(), '', ''],
+                    ['Total Cases', allCases.length, '', ''],
+                    ['', '', '', ''],
+                    ['Case #', 'Client', 'Project', 'Total Defects', 'Open Defects', 'Total Cost']
+                ];
+
+                allCases.forEach(caseItem => {
+                    const defectCount = caseItem.defects ? caseItem.defects.length : 0;
+                    const openCount = caseItem.defects ? caseItem.defects.filter(d => ['unassigned', 'assigned', 'in-progress'].includes(d.status)).length : 0;
+                    const totalCost = caseItem.defects ? caseItem.defects.reduce((sum, d) => sum + (d.repairCost || 0), 0) : 0;
+                    
+                    summaryData.push([
+                        `Case #${caseItem.id}`,
+                        caseItem.clientName || 'N/A',
+                        caseItem.projectName || 'N/A',
+                        defectCount,
+                        openCount,
+                        totalCost > 0 ? `${totalCost.toFixed(2)}` : '$0.00'
+                    ]);
+                });
+
+                const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, summaryWs, 'All Cases Summary');
+
+                // Individual case sheets
+                allCases.forEach(caseItem => {
+                    if (caseItem.defects && caseItem.defects.length > 0) {
+                        const caseData = [
+                            [`Case #${caseItem.id}`, '', '', ''],
+                            ['Client', caseItem.clientName || 'N/A', '', ''],
+                            ['Project', caseItem.projectName || 'N/A', '', ''],
+                            ['Inspector', caseItem.inspectionConductedBy || 'N/A', '', ''],
+                            ['', '', '', ''],
+                            ['Defect ID', 'Description', 'Priority', 'Status', 'Repair Cost']
+                        ];
+
+                        caseItem.defects.forEach(defect => {
+                            caseData.push([
+                                defect.id,
+                                defect.description,
+                                defect.priority,
+                                defect.status,
+                                defect.repairCost > 0 ? `${defect.repairCost.toFixed(2)}` : '$0.00'
+                            ]);
+                        });
+
+                        const caseWs = XLSX.utils.aoa_to_sheet(caseData);
+                        const sheetName = `Case ${caseItem.id}`.substring(0, 31); // Excel sheet name limit
+                        XLSX.utils.book_append_sheet(wb, caseWs, sheetName);
+                    }
+                });
+
+                // Save file
+                const fileName = `All_Cases_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                alert(`All cases exported successfully!\n\nFile: ${fileName}\n\nIncludes summary and individual case details for ${allCases.length} cases.`);
+            }
+        }
+
+        function clearAllCases() {
+            if (confirm('⚠️ WARNING: This will permanently delete ALL saved cases and cannot be undone!\n\nAre you absolutely sure you want to clear all data?')) {
+                if (confirm('This is your final confirmation. All case data will be lost forever. Continue?')) {
+                    clearAllStorage();
+                    cases = [];
+                    defects = [];
+                    refreshSavedCases();
+                    alert('All case data has been cleared.');
+                }
+            }
+        }
         function saveCasesToStorage() {
             try {
                 console.log('Saving cases to storage:', cases);
@@ -1891,7 +2391,10 @@
 
         // Set today's date as default
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('inspectionDate').valueAsDate = new Date();
+            const inspectionDateInput = document.getElementById('inspectionDate');
+            if (inspectionDateInput) {
+                inspectionDateInput.valueAsDate = new Date();
+            }
         });
     </script>
 </body>
